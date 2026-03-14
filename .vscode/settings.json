@@ -1,6 +1,7 @@
 {
     "python.analysis.extraPaths": [
         "./bot",
-        "./"
+        "./",
+        "C:\\Users\\Isum Enuka\\AppData\\Roaming\\Python\\Python314\\site-packages"
     ]
 }
