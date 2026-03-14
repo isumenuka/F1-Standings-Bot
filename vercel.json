@@ -3,6 +3,10 @@
     {
       "src": "web/app.py",
       "use": "@vercel/python"
+    },
+    {
+      "src": "web/static/**",
+      "use": "@vercel/static"
     }
   ],
   "routes": [
