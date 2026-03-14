@@ -16,23 +16,3 @@ services:
         value: shared/data.json
       - key: PYTHONUNBUFFERED
         value: "1"
-
-  # ── Admin Web Panel (Web Service) ─────────────────────────────────────────
-  - type: web
-    name: discord-standings-web
-    runtime: python
-    buildCommand: pip install -r requirements.txt
-    startCommand: python web/app.py
-    envVars:
-      - key: ADMIN_PASSWORD
-        sync: false          # Set this manually in Render dashboard
-      - key: SECRET_KEY
-        sync: false
-      - key: DATABASE_URL
-        sync: false          # Set this manually to the PostgreSQL Internal Database URL
-      - key: DATA_PATH
-        value: shared/data.json
-      - key: PORT
-        value: "5000"
-      - key: PYTHONUNBUFFERED
-        value: "1"
