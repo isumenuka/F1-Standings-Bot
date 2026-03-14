@@ -3,6 +3,7 @@ import sys
 import json
 from flask import Flask, render_template, request, redirect, url_for, session, flash
 from dotenv import load_dotenv
+import requests
 
 # Add parent to path
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
@@ -22,6 +23,26 @@ ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD", "admin123")
 # ── Auth ──────────────────────────────────────────────────────────────────────
 def is_logged_in():
     return session.get("logged_in") is True
+
+
+# ── Image Upload ──────────────────────────────────────────────────────────────
+def upload_image(file_obj):
+    """Upload image to a free image host and return the URL."""
+    url = "https://freeimage.host/api/1/upload"
+    data = {
+        "key": os.getenv("IMAGE_HOST_KEY", "6d207e02198a847aa98d0a2a901485a5"),
+        "action": "upload",
+        "format": "json"
+    }
+    files = {"source": file_obj}
+    try:
+        resp = requests.post(url, data=data, files=files, timeout=15)
+        resp.raise_for_status()
+        return resp.json()["image"]["url"]
+    except Exception as e:
+        print(f"Image upload failed: {e}")
+        return None
+
 
 
 @app.route("/login", methods=["GET", "POST"])
@@ -58,6 +79,15 @@ def add():
     name = request.form.get("name", "").strip()
     points = request.form.get("points", "0").strip()
     avatar_url = request.form.get("avatar_url", "").strip()
+    
+    avatar_file = request.files.get("avatar")
+    if avatar_file and avatar_file.filename:
+        uploaded_url = upload_image(avatar_file)
+        if uploaded_url:
+            avatar_url = uploaded_url
+        else:
+            flash("⚠️ Failed to upload image, but player will be added anyway.", "warning")
+
     if not name:
         flash("❌ Player name cannot be empty.", "error")
         return redirect(url_for("index"))
@@ -79,6 +109,15 @@ def update(player_id):
     points_raw = request.form.get("points", "").strip()
     points = int(points_raw) if points_raw else None
     avatar_url = request.form.get("avatar_url", "").strip() or None
+
+    avatar_file = request.files.get("avatar")
+    if avatar_file and avatar_file.filename:
+        uploaded_url = upload_image(avatar_file)
+        if uploaded_url:
+            avatar_url = uploaded_url
+        else:
+            flash("⚠️ Failed to upload image, standard update applied.", "warning")
+
     update_player(player_id, name=name, points=points, avatar_url=avatar_url)
     flash("✅ Player updated!", "success")
     return redirect(url_for("index"))

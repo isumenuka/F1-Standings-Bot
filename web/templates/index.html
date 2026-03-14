@@ -53,7 +53,7 @@
     <!-- ── Add Player Form ── -->
     <section class="panel">
       <h2 class="panel-title">➕ Add New Player</h2>
-      <form method="POST" action="/add" class="add-form">
+      <form method="POST" action="/add" class="add-form" enctype="multipart/form-data">
         <div class="form-row">
           <div class="form-group">
             <label>Player Name</label>
@@ -64,8 +64,9 @@
             <input type="number" name="points" placeholder="0" value="0" min="0"/>
           </div>
           <div class="form-group form-group--lg">
-            <label>Avatar URL <span class="optional">(optional)</span></label>
-            <input type="url" name="avatar_url" placeholder="https://..."/>
+            <label>Avatar <span class="optional">(URL or Upload image)</span></label>
+            <input type="url" name="avatar_url" placeholder="https://..." style="margin-bottom: 5px;"/>
+            <input type="file" name="avatar" accept="image/*" style="font-size: 0.8rem;"/>
           </div>
           <div class="form-group form-group--btn">
             <label>&nbsp;</label>
@@ -96,7 +97,11 @@
             <tr class="row-{{ loop.index % 5 }}">
               <td class="pos">{{ loop.index }}</td>
               <td class="player-name">
+                {% if player.avatar_url %}
+                <img src="{{ player.avatar_url }}" style="width: 30px; height: 30px; border-radius: 50%; vertical-align: middle; margin-right: 8px; object-fit: cover;">
+                {% else %}
                 <span class="avatar-badge">{{ player.name[:2].upper() }}</span>
+                {% endif %}
                 {{ player.name }}
               </td>
               <td class="points-cell">{{ player.points }}</td>
@@ -109,11 +114,14 @@
                 </form>
               </td>
 
-              <!-- Rename player -->
+              <!-- Rename / Avatar Update -->
               <td>
-                <form method="POST" action="/update/{{ player.id }}" class="inline-form">
-                  <input type="text" name="name" value="{{ player.name }}" class="input-name"/>
-                  <button type="submit" class="btn btn-save">Rename</button>
+                <form method="POST" action="/update/{{ player.id }}" class="inline-form" enctype="multipart/form-data" style="display:flex; flex-direction:column; gap:5px;">
+                  <div style="display:flex; gap:5px;">
+                    <input type="text" name="name" value="{{ player.name }}" class="input-name"/>
+                    <button type="submit" class="btn btn-save">Save</button>
+                  </div>
+                  <input type="file" name="avatar" accept="image/*" style="font-size: 0.7rem; width: 150px;" title="Upload new avatar"/>
                 </form>
               </td>
 

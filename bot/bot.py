@@ -72,7 +72,7 @@ async def standings(interaction: discord.Interaction):
 
         embed = discord.Embed(
             title="🏆 Driver Standings",
-            description="Current season leaderboard",
+            description="Current season leaderboard\n\n🏎️ **[Click here to view the Gaming Hassa YT League on Racenet](https://racenet.com/f1_25/leagues/league/leagueID=25953)**",
             color=discord.Color.from_rgb(220, 40, 40)
         )
         embed.set_image(url="attachment://standings.png")

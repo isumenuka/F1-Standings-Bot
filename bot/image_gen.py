@@ -1,8 +1,8 @@
 import os
 import sys
 import io
-import requests as _requests
-from PIL import Image, ImageDraw, ImageFont
+import requests
+from PIL import Image, ImageDraw, ImageFont, ImageOps
 
 # ── Font setup ──────────────────────────────────────────────────────────────
 FONTS_DIR = os.path.join(os.path.dirname(__file__), "..", "fonts")
@@ -14,20 +14,20 @@ FONT_URLS = {
     FONT_REG_PATH:     "https://github.com/googlefonts/roboto/raw/main/src/hinted/Roboto-Regular.ttf",
 }
 
-
 def ensure_fonts():
     os.makedirs(FONTS_DIR, exist_ok=True)
     for path, url in FONT_URLS.items():
         if not os.path.exists(path):
             print(f"[image_gen] Downloading font: {os.path.basename(path)} ...")
-            r = _requests.get(url, allow_redirects=True, timeout=30)
-            r.raise_for_status()
-            with open(path, "wb") as _f:
-                _f.write(r.content)
-
+            try:
+                r = requests.get(url, allow_redirects=True, timeout=30)
+                r.raise_for_status()
+                with open(path, "wb") as _f:
+                    _f.write(r.content)
+            except Exception as e:
+                print(f"Failed to download font {path}: {e}")
 
 ensure_fonts()
-
 
 def load_font(path, size):
     try:
@@ -35,172 +35,173 @@ def load_font(path, size):
     except Exception:
         return ImageFont.load_default()
 
-
 # ── Palette ──────────────────────────────────────────────────────────────────
-BG_COLOR       = (10, 10, 20)           # near-black background
-TITLE_BG       = (15, 15, 30)
-TITLE_COLOR    = (255, 255, 255)
-SUBTITLE_COLOR = (180, 180, 200)
-
 ROW_COLORS = [
-    (230, 120, 20),   # 1 – orange
-    (20, 140, 230),   # 2 – blue
-    (0, 180, 180),    # 3 – teal
-    (220, 30, 30),    # 4 – red
-    (20, 190, 100),   # 5 – green
+    (230, 120, 20),   # 1 – orange (McLaren)
+    (20, 140, 230),   # 2 – blue (Red Bull)
+    (0, 180, 180),    # 3 – teal (Mercedes)
+    (220, 30, 30),    # 4 – red (Ferrari)
+    (20, 190, 100),   # 5 – green (Aston/Sauber)
     (150, 50, 220),   # 6 – purple
-    (20, 100, 220),   # 7 – cobalt
+    (20, 100, 220),   # 7 – cobalt (Williams/Alpine)
     (220, 160, 20),   # 8 – gold
     (220, 40, 130),   # 9 – magenta
     (40, 200, 130),   # 10 – emerald
 ]
 
-ROW_DARK_MULTIPLIER = 0.35   # darkness applied to the right-side points area
-
-
-def darken(color, factor=ROW_DARK_MULTIPLIER):
+def darken(color, factor=0.5):
     return tuple(int(c * factor) for c in color)
 
-
 # ── Dimensions ───────────────────────────────────────────────────────────────
-IMG_WIDTH   = 820
-TITLE_H     = 130
-ROW_H       = 68
-FOOTER_H    = 50
-PADDING_X   = 28
-AVATAR_R    = 26          # circle radius
-POINTS_W    = 160         # width of the points + dark section on right
+IMG_WIDTH   = 1080
+TITLE_H     = 180
+ROW_H       = 80
+FOOTER_H    = 80
+POS_W       = 100
+PADDING_X   = 25
+AVATAR_SIZE = 60
 
-
-def draw_avatar_circle(draw, cx, cy, r, color, initials, font):
-    """Draw a filled circle with initials inside."""
-    draw.ellipse((cx - r, cy - r, cx + r, cy + r), fill=color)
-    # White inner ring
-    draw.ellipse((cx - r + 3, cy - r + 3, cx + r - 3, cy + r - 3),
-                 outline=(255, 255, 255, 80), width=2)
-    # Initials
+def draw_avatar_placeholder(draw, cx, cy, r, color, initials, font):
+    """Draw a fallback circle with initials."""
+    draw.ellipse((cx - r, cy - r, cx + r, cy + r), fill=darken(color, 0.4))
+    draw.ellipse((cx - r + 2, cy - r + 2, cx + r - 2, cy + r - 2), outline=(255, 255, 255, 80), width=2)
     text = initials[:2].upper()
     bbox = draw.textbbox((0, 0), text, font=font)
     tw, th = bbox[2] - bbox[0], bbox[3] - bbox[1]
-    draw.text((cx - tw // 2, cy - th // 2), text, fill=(255, 255, 255), font=font)
+    draw.text((cx - tw // 2, cy - th // 2 - 2), text, fill=(255, 255, 255), font=font)
 
+def load_avatar(url, size=(AVATAR_SIZE, AVATAR_SIZE)):
+    if not url:
+        return None
+    try:
+        r = requests.get(url, timeout=5)
+        r.raise_for_status()
+        img = Image.open(io.BytesIO(r.content)).convert("RGBA")
+        
+        # Crop to square
+        w, h = img.size
+        min_dim = min(w, h)
+        left = (w - min_dim)/2
+        top = (h - min_dim)/2
+        img = img.crop((left, top, left+min_dim, top+min_dim))
+        img = img.resize(size, Image.Resampling.LANCZOS)
+        
+        # Make a circular mask
+        mask = Image.new("L", size, 0)
+        draw = ImageDraw.Draw(mask)
+        draw.ellipse((0, 0, size[0], size[1]), fill=255)
+        
+        output = Image.new("RGBA", size, (0, 0, 0, 0))
+        output.paste(img, (0, 0), mask=mask)
+        return output
+    except Exception as e:
+        print(f"Failed to load avatar: {e}")
+        return None
 
-def generate_standings_image(players, title="DRIVER STANDINGS", subtitle="Season 2025"):
-    """
-    Generate an F1-style standings image.
-
-    Args:
-        players: list of dicts with keys: name, points, avatar_url (optional)
-        title: header title text
-        subtitle: smaller subtitle under the title
-
-    Returns:
-        BytesIO object containing the PNG image
-    """
+def generate_standings_image(players, title="DRIVER STANDINGS"):
     num = len(players)
     img_height = TITLE_H + num * ROW_H + FOOTER_H
 
-    img = Image.new("RGB", (IMG_WIDTH, img_height), BG_COLOR)
+    img = Image.new("RGB", (IMG_WIDTH, img_height), (15, 15, 15))
     draw = ImageDraw.Draw(img)
 
-    # ── Fonts ─────────────────────────────────────────────────────────────
-    font_title    = load_font(FONT_BOLD_PATH, 40)
-    font_subtitle = load_font(FONT_REG_PATH, 18)
-    font_pos      = load_font(FONT_BOLD_PATH, 28)
-    font_name     = load_font(FONT_BOLD_PATH, 22)
-    font_pts      = load_font(FONT_BOLD_PATH, 30)
-    font_pts_lbl  = load_font(FONT_REG_PATH, 13)
-    font_init     = load_font(FONT_BOLD_PATH, 16)
+    font_title    = load_font(FONT_BOLD_PATH, 55)
+    font_subtitle = load_font(FONT_REG_PATH, 24)
+    font_pos      = load_font(FONT_BOLD_PATH, 36)
+    font_name     = load_font(FONT_BOLD_PATH, 32)
+    font_pts      = load_font(FONT_BOLD_PATH, 42)
+    font_pts_lbl  = load_font(FONT_REG_PATH, 16)
+    font_init     = load_font(FONT_BOLD_PATH, 22)
 
-    # ── Title block ───────────────────────────────────────────────────────
-    # Gradient-like effect — two rectangles
-    draw.rectangle([(0, 0), (IMG_WIDTH, TITLE_H)], fill=(12, 12, 25))
-    # Accent bar on top
-    draw.rectangle([(0, 0), (IMG_WIDTH, 5)], fill=(220, 40, 40))
+    # ── Header ─────────────────────────────────────────────────────────────
+    # Dark grey background
+    draw.rectangle([(0, 0), (IMG_WIDTH, TITLE_H)], fill=(12, 12, 15))
+    # Signature F1 Red Stripes
+    draw.rectangle([(0, 0), (IMG_WIDTH, 12)], fill=(225, 6, 0))
+    draw.rectangle([(0, TITLE_H - 45), (IMG_WIDTH, TITLE_H - 35)], fill=(225, 6, 0))
 
     # Title text
-    title_upper = title.upper()
-    bbox = draw.textbbox((0, 0), title_upper, font=font_title)
+    bbox = draw.textbbox((0, 0), title, font=font_title)
     tw = bbox[2] - bbox[0]
-    draw.text(((IMG_WIDTH - tw) // 2, 22), title_upper, fill=(255, 255, 255), font=font_title)
+    draw.text(((IMG_WIDTH - tw) // 2, 35), title.upper(), fill=(255, 255, 255), font=font_title)
 
     # Subtitle
-    bbox2 = draw.textbbox((0, 0), subtitle, font=font_subtitle)
+    sub = "GAMING HASSA YT LEAGUE"
+    bbox2 = draw.textbbox((0, 0), sub, font=font_subtitle)
     sw = bbox2[2] - bbox2[0]
-    draw.text(((IMG_WIDTH - sw) // 2, 76), subtitle, fill=(160, 160, 190), font=font_subtitle)
+    draw.text(((IMG_WIDTH - sw) // 2, 95), sub, fill=(180, 180, 180), font=font_subtitle)
 
-    # Column headers
-    hdr_y = TITLE_H - 30
-    draw.text((PADDING_X, hdr_y), "POS.", fill=(130, 130, 160), font=font_pts_lbl)
-    draw.text((PADDING_X + 100, hdr_y), "PLAYER", fill=(130, 130, 160), font=font_pts_lbl)
-    pts_hdr_bbox = draw.textbbox((0, 0), "POINTS", font=font_pts_lbl)
-    pts_hdr_w = pts_hdr_bbox[2] - pts_hdr_bbox[0]
-    draw.text((IMG_WIDTH - PADDING_X - pts_hdr_w, hdr_y), "POINTS", fill=(130, 130, 160), font=font_pts_lbl)
+    # Column Labels
+    hdr_y = TITLE_H - 25
+    draw.text((32, hdr_y), "POS", fill=(180, 180, 180), font=font_pts_lbl)
+    draw.text((POS_W + 15, hdr_y), "PLAYER", fill=(180, 180, 180), font=font_pts_lbl)
+    
+    pb = draw.textbbox((0, 0), "POINTS", font=font_pts_lbl)
+    pw = pb[2] - pb[0]
+    draw.text((IMG_WIDTH - pw - PADDING_X - 15, hdr_y), "POINTS", fill=(180, 180, 180), font=font_pts_lbl)
 
-    # ── Rows ─────────────────────────────────────────────────────────────
+    # ── Rows ───────────────────────────────────────────────────────────────
     for i, player in enumerate(players):
         y_start = TITLE_H + i * ROW_H
-        y_end   = y_start + ROW_H - 2      # 2px gap between rows
+        y_end   = y_start + ROW_H - 2
 
         color_idx = i % len(ROW_COLORS)
         row_color = ROW_COLORS[color_idx]
-        dark_color = darken(row_color, 0.2)
 
-        # ── Row background (gradient split) ──────────────────────────────
-        # Left section: vibrant color
-        split_x = IMG_WIDTH - POINTS_W
-        draw.rectangle([(0, y_start), (split_x, y_end)], fill=row_color)
-        # Right section: dark
-        draw.rectangle([(split_x, y_start), (IMG_WIDTH, y_end)], fill=dark_color)
-
-        # Subtle inner border between sections
-        draw.line([(split_x, y_start), (split_x, y_end)], fill=(255, 255, 255, 40), width=1)
-
-        # Row center Y
-        cy = y_start + ROW_H // 2 - 1
-
-        # ── Position number ───────────────────────────────────────────────
+        # 1) Position block (Dark)
+        draw.rectangle([(0, y_start), (POS_W, y_end)], fill=(20, 20, 24))
+        
         pos_text = str(i + 1)
-        pos_bbox = draw.textbbox((0, 0), pos_text, font=font_pos)
-        ph = pos_bbox[3] - pos_bbox[1]
-        draw.text((PADDING_X, cy - ph // 2), pos_text, fill=(255, 255, 255), font=font_pos)
+        p_bbox = draw.textbbox((0, 0), pos_text, font=font_pos)
+        pw, ph = p_bbox[2]-p_bbox[0], p_bbox[3]-p_bbox[1]
+        draw.text(((POS_W - pw)//2, y_start + (ROW_H - ph)//2 - 6), pos_text, fill=(255, 255, 255), font=font_pos)
 
-        # ── Avatar circle ─────────────────────────────────────────────────
-        avatar_cx = PADDING_X + 55
-        initials = "".join(w[0] for w in player["name"].split("_") if w)[:2] or player["name"][:2]
-        circle_color = darken(row_color, 0.55)
-        draw_avatar_circle(draw, avatar_cx, cy, AVATAR_R, circle_color, initials, font_init)
+        # 2) Team Color block (Main)
+        draw.rectangle([(POS_W, y_start), (IMG_WIDTH, y_end)], fill=row_color)
 
-        # ── Player name ───────────────────────────────────────────────────
+        # 3) Avatar
+        avatar_img = load_avatar(player.get("avatar_url"))
+        avatar_x = POS_W + 20
+        # Center avatar vertically
+        avatar_y = y_start + (ROW_H - AVATAR_SIZE) // 2
+        
+        if avatar_img:
+            img.paste(avatar_img, (avatar_x, avatar_y), mask=avatar_img)
+        else:
+            initials = "".join(w[0] for w in player["name"].split("_") if w)[:2] or player["name"][:2]
+            draw_avatar_placeholder(draw, avatar_x + AVATAR_SIZE//2, y_start + ROW_H//2, AVATAR_SIZE//2, row_color, initials, font_init)
+
+        # 4) Name
+        name_x = avatar_x + AVATAR_SIZE + 20
         name_text = player["name"].upper()
-        name_bbox = draw.textbbox((0, 0), name_text, font=font_name)
-        nh = name_bbox[3] - name_bbox[1]
-        draw.text((PADDING_X + 90, cy - nh // 2), name_text, fill=(255, 255, 255), font=font_name)
+        n_bbox = draw.textbbox((0, 0), name_text, font=font_name)
+        nh = n_bbox[3]-n_bbox[1]
+        draw.text((name_x, y_start + (ROW_H - nh)//2 - 6), name_text, fill=(255, 255, 255), font=font_name)
 
-        # ── Points (right side) ───────────────────────────────────────────
+        # 5) Points right aligned
         pts_text = str(player["points"])
         pts_bbox = draw.textbbox((0, 0), pts_text, font=font_pts)
-        pw = pts_bbox[2] - pts_bbox[0]
-        ph2 = pts_bbox[3] - pts_bbox[1]
-        pts_x = split_x + (POINTS_W - pw) // 2
-        draw.text((pts_x, cy - ph2 // 2), pts_text, fill=(255, 255, 255), font=font_pts)
+        pt_w = pts_bbox[2]-pts_bbox[0]
+        pt_h = pts_bbox[3]-pts_bbox[1]
+        pts_x = IMG_WIDTH - pt_w - PADDING_X - 15
+        draw.text((pts_x, y_start + (ROW_H - pt_h)//2 - 8), pts_text, fill=(255, 255, 255), font=font_pts)
 
     # ── Footer ─────────────────────────────────────────────────────────────
     fy = TITLE_H + num * ROW_H
-    draw.rectangle([(0, fy), (IMG_WIDTH, fy + FOOTER_H)], fill=(6, 6, 15))
-    footer_text = "STANDINGS • BOT POWERED"
-    ftb = draw.textbbox((0, 0), footer_text, font=font_subtitle)
-    fw = ftb[2] - ftb[0]
-    draw.text(((IMG_WIDTH - fw) // 2, fy + 14), footer_text, fill=(80, 80, 110), font=font_subtitle)
+    draw.rectangle([(0, fy), (IMG_WIDTH, img_height)], fill=(12, 12, 15))
+    draw.rectangle([(0, img_height - 12), (IMG_WIDTH, img_height)], fill=(225, 6, 0)) # Bottom stripe
+    
+    footer_text = "https://racenet.com/f1_25/leagues/league/leagueID=25953"
+    ftb = draw.textbbox((0,0), footer_text, font=font_subtitle)
+    fw = ftb[2]-ftb[0]
+    draw.text(((IMG_WIDTH - fw)//2, fy + 24), footer_text, fill=(160, 160, 180), font=font_subtitle)
 
-    # ── Save to BytesIO ────────────────────────────────────────────────────
+    # ── Output ─────────────────────────────────────────────────────────────
     buf = io.BytesIO()
     img.save(buf, format="PNG")
     buf.seek(0)
     return buf
 
-
-# ── Standalone test ──────────────────────────────────────────────────────────
 if __name__ == "__main__":
     sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
     from shared.db import load_players
