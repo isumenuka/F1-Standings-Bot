@@ -67,7 +67,7 @@ async def standings(interaction: discord.Interaction):
         return
 
     try:
-        image_buf = generate_standings_image(players, "DRIVER STANDINGS", "Season 2025")
+        image_buf = generate_standings_image(players, "DRIVER STANDINGS")
         file = discord.File(fp=image_buf, filename="standings.png")
 
         content = (
