@@ -11,7 +11,8 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 load_dotenv()
 
 from shared.db import (
-    load_players, add_player, update_player, delete_player, save_players, update_ranks, bulk_update_players
+    load_players, add_player, update_player, delete_player, save_players, update_ranks, bulk_update_players,
+    get_setting, set_setting
 )
 
 app = Flask(__name__)
@@ -177,6 +178,22 @@ def bulk_update():
     except Exception as e:
         print(f"Bulk update failed: {e}")
         return {"error": str(e)}, 500
+
+@app.route("/settings", methods=["GET", "POST"])
+def settings():
+    if not is_logged_in():
+        return redirect(url_for("login"))
+        
+    if request.method == "POST":
+        league_url = request.form.get("league_url")
+        if league_url:
+            set_setting("league_url", league_url)
+            flash("Settings updated successfully!", "success")
+        return redirect(url_for("index"))
+        
+    return {
+        "league_url": get_setting("league_url", "https://racenet.com/f1_25/leagues/league/leagueID=25953")
+    }
 
 
 if __name__ == "__main__":

@@ -31,7 +31,7 @@ threading.Thread(target=_run_health_server, daemon=True).start()
 TOKEN = os.getenv("DISCORD_TOKEN")
 APPLICATION_ID = int(os.getenv("APPLICATION_ID", "0"))
 
-from shared.db import load_players
+from shared.db import load_players, get_setting
 from image_gen import generate_standings_image
 
 
@@ -70,16 +70,39 @@ async def standings(interaction: discord.Interaction):
         image_buf = generate_standings_image(players, "DRIVER STANDINGS")
         file = discord.File(fp=image_buf, filename="standings.png")
 
+        # Get dynamic league URL
+        league_url = get_setting("league_url", "https://racenet.com/f1_25/leagues/league/leagueID=25953")
+        
         content = (
             "🏆 **Driver Standings**\n"
-            "🏎️ **[Click here to view the Gaming Hassa YT League on Racenet](https://racenet.com/f1_25/leagues/league/leagueID=25953)**\n"
+            f"🏎️ **[Click here to view the League on Racenet]({league_url})**\n"
             "*Use `/standings` anytime to refresh*"
         )
-        await interaction.followup.send(content=content, file=file)
+        
+        view = discord.ui.View()
+        view.add_item(discord.ui.Button(label="View Full League", url=league_url, style=discord.ButtonStyle.link))
+        
+        await interaction.followup.send(content=content, file=file, view=view)
 
     except Exception as e:
         print(f"[ERROR] Image generation failed: {e}")
         await interaction.followup.send(f"❌ Failed to generate standings image. Error: {e}")
+
+@bot.tree.command(name="league", description="Get the link to the official league page")
+async def league(interaction: discord.Interaction):
+    """Get the link to the official league page."""
+    league_url = get_setting("league_url", "https://racenet.com/f1_25/leagues/league/leagueID=25953")
+    
+    embed = discord.Embed(
+        title="🏁 Official League Page",
+        description=f"Click the button below to view the full league standings, results, and upcoming races on Racenet.",
+        color=0xFF1801 # F1 Red
+    )
+    
+    view = discord.ui.View()
+    view.add_item(discord.ui.Button(label="Open Racenet League", url=league_url, style=discord.ButtonStyle.link))
+    
+    await interaction.response.send_message(embed=embed, view=view)
 
 
 @bot.tree.command(name="addpoints", description="[Admin] Add points to a player by name")
