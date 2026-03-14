@@ -9,37 +9,52 @@ DB_URL = os.getenv("DATABASE_URL")
 
 @contextlib.contextmanager
 def get_db_cursor(cursor_factory=None):
-    conn = psycopg2.connect(DB_URL)
+    url = DB_URL
+    if url and "render.com" in url and "sslmode" not in url:
+        url += ("&" if "?" in url else "?") + "sslmode=require"
+    
     try:
-        with conn:
-            with conn.cursor(cursor_factory=cursor_factory) as cur:
-                yield cur
-    finally:
-        conn.close()
+        conn = psycopg2.connect(url)
+        try:
+            with conn:
+                with conn.cursor(cursor_factory=cursor_factory) as cur:
+                    yield cur
+        finally:
+            conn.close()
+    except Exception as e:
+        print(f"Database connection error: {e}")
+        raise
 
 def _init_db():
-    if not DB_URL: return
-    with get_db_cursor() as cur:
-        # Players table
-        cur.execute("""
-            CREATE TABLE IF NOT EXISTS players (
-                id SERIAL PRIMARY KEY,
-                name TEXT NOT NULL,
-                real_name TEXT,
-                points INTEGER DEFAULT 0,
-                avatar_url TEXT
-            )
-        """)
-        # Add manual_rank column if it doesn't exist
-        cur.execute("ALTER TABLE players ADD COLUMN IF NOT EXISTS manual_rank INTEGER;")
-        
-        # Bot Settings table
-        cur.execute("""
-            CREATE TABLE IF NOT EXISTS bot_settings (
-                key TEXT PRIMARY KEY,
-                value TEXT
-            )
-        """)
+    if not DB_URL:
+        print("No DATABASE_URL found, skipping DB initialization (using JSON fallback).")
+        return
+    try:
+        with get_db_cursor() as cur:
+            # Players table
+            cur.execute("""
+                CREATE TABLE IF NOT EXISTS players (
+                    id SERIAL PRIMARY KEY,
+                    name TEXT NOT NULL,
+                    real_name TEXT,
+                    points INTEGER DEFAULT 0,
+                    avatar_url TEXT
+                )
+            """)
+            # Add manual_rank column if it doesn't exist
+            cur.execute("ALTER TABLE players ADD COLUMN IF NOT EXISTS manual_rank INTEGER;")
+            
+            # Bot Settings table
+            cur.execute("""
+                CREATE TABLE IF NOT EXISTS bot_settings (
+                    key TEXT PRIMARY KEY,
+                    value TEXT
+                )
+            """)
+    except Exception as e:
+        print(f"Failed to initialize database: {e}")
+        # We don't crash here so the app can at least start with JSON fallback if needed
+        # (Though if DB_URL is set, most functions will still try to use it and fail later)
 
 _init_db()
 
