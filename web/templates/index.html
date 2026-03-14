@@ -252,25 +252,28 @@
                     <h3 style="font-size: 14px; margin-bottom: 16px; color: var(--text-muted);">Add New Command</h3>
                     <form action="{{ url_for('manage_custom_commands') }}" method="POST">
                         <input type="hidden" name="action" value="add">
-                        <div class="input-row">
-                            <div class="form-group" style="flex: 1;">
-                                <label class="form-label">Command Name</label>
-                                <div style="display: flex; align-items: center; background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 8px; padding: 0 12px;">
-                                    <span style="color: var(--text-muted); padding-right: 4px;">/</span>
-                                    <input type="text" name="name" placeholder="rules" required style="border: none; background: transparent; padding-left: 0;">
+                        <div style="display: flex; flex-direction: column; gap: 24px;">
+                            <div style="display: grid; grid-template-columns: 1fr auto; gap: 16px; align-items: flex-end;">
+                                <div class="form-group">
+                                    <label class="form-label">Command Name</label>
+                                    <div style="display: flex; align-items: center; background: var(--surface-alt); border: 1px solid var(--border-color); border-radius: 8px; padding: 0 12px;">
+                                        <span style="color: var(--text-muted); padding-right: 4px;">/</span>
+                                        <input type="text" name="name" placeholder="rules" required style="border: none; background: transparent; padding-left: 0; width: 100%;">
+                                    </div>
                                 </div>
+                                <button type="submit" class="btn btn-primary" style="height: 46px; padding: 0 40px;">
+                                    <i class="fas fa-plus"></i> Add Command
+                                </button>
                             </div>
-                            <div class="form-group" style="flex: 2;">
+                            
+                            <div class="form-group">
                                 <label class="form-label">Response Text <small>(Markdown supported)</small></label>
-                                <textarea name="response" placeholder="Enter command response. Markdown is supported!
-Example:
-**Bold text**
-* Italic item
-* [Link](https://...)" required style="width: 100%; min-height: 100px; resize: vertical;"></textarea>
-                            </div>
-                            <div class="form-group" style="flex: 0;">
-                                <label class="form-label">&nbsp;</label>
-                                <button type="submit" class="btn btn-primary">Add</button>
+                                <textarea name="response" placeholder="Enter command response. Markdown is supported! 
+You can use:
+**Bold text** for emphasis
+* Bullets for lists
+[Link Text](https://link.com) for links
+> Quotes for official statements" required style="width: 100%; min-height: 250px; resize: vertical; padding: 16px; font-size: 15px;"></textarea>
                             </div>
                         </div>
                     </form>
