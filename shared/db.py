@@ -28,12 +28,13 @@ def get_next_id(players):
     return max(p["id"] for p in players) + 1
 
 
-def add_player(name, points=0, avatar_url=""):
+def add_player(name, points=0, avatar_url="", real_name=""):
     """Add a new player and return updated list."""
     players = load_players()
     new_player = {
         "id": get_next_id(players),
         "name": name,
+        "real_name": real_name,
         "points": int(points),
         "avatar_url": avatar_url
     }
@@ -42,7 +43,7 @@ def add_player(name, points=0, avatar_url=""):
     return players
 
 
-def update_player(player_id, name=None, points=None, avatar_url=None):
+def update_player(player_id, name=None, points=None, avatar_url=None, real_name=None):
     """Update a player by ID."""
     players = load_players()
     # Reload raw (unsorted) to update
@@ -52,6 +53,8 @@ def update_player(player_id, name=None, points=None, avatar_url=None):
         if p["id"] == int(player_id):
             if name is not None:
                 p["name"] = name
+            if real_name is not None:
+                p["real_name"] = real_name
             if points is not None:
                 p["points"] = int(points)
             if avatar_url is not None:

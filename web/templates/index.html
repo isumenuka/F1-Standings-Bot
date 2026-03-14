@@ -56,8 +56,12 @@
       <form method="POST" action="/add" class="add-form" enctype="multipart/form-data">
         <div class="form-row">
           <div class="form-group">
-            <label>Player Name</label>
+            <label>Gaming Name</label>
             <input type="text" name="name" placeholder="e.g. wolfygear" required/>
+          </div>
+          <div class="form-group">
+            <label>Real Name</label>
+            <input type="text" name="real_name" placeholder="e.g. John Doe"/>
           </div>
           <div class="form-group form-group--sm">
             <label>Points</label>
@@ -102,7 +106,12 @@
                 {% else %}
                 <span class="avatar-badge">{{ player.name[:2].upper() }}</span>
                 {% endif %}
-                {{ player.name }}
+                <div style="display:inline-block; vertical-align:middle; line-height: 1.2;">
+                   <div style="font-weight:bold;">{{ player.real_name or player.name }}</div>
+                   {% if player.real_name %}
+                   <div style="font-size: 0.8em; opacity: 0.7;" title="Gaming Name">{{ player.name }}</div>
+                   {% endif %}
+                </div>
               </td>
               <td class="points-cell">{{ player.points }}</td>
 
@@ -117,9 +126,12 @@
               <!-- Rename / Avatar Update -->
               <td>
                 <form method="POST" action="/update/{{ player.id }}" class="inline-form" enctype="multipart/form-data" style="display:flex; flex-direction:column; gap:5px;">
-                  <div style="display:flex; gap:5px;">
-                    <input type="text" name="name" value="{{ player.name }}" class="input-name"/>
-                    <button type="submit" class="btn btn-save">Save</button>
+                  <div style="display:flex; gap:5px; flex-direction:column;">
+                    <div style="display:flex; gap:5px;">
+                      <input type="text" name="name" value="{{ player.name }}" class="input-name" placeholder="Gaming Name" required/>
+                      <button type="submit" class="btn btn-save">Save</button>
+                    </div>
+                    <input type="text" name="real_name" value="{{ player.real_name or '' }}" class="input-name" placeholder="Real Name"/>
                   </div>
                   <input type="file" name="avatar" accept="image/*" style="font-size: 0.7rem; width: 150px;" title="Upload new avatar"/>
                 </form>

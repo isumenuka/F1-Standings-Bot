@@ -173,10 +173,22 @@ def generate_standings_image(players, title="DRIVER STANDINGS"):
 
         # 4) Name
         name_x = avatar_x + AVATAR_SIZE + 20
-        name_text = player["name"].upper()
-        n_bbox = draw.textbbox((0, 0), name_text, font=font_name)
-        nh = n_bbox[3]-n_bbox[1]
-        draw.text((name_x, y_start + (ROW_H - nh)//2 - 6), name_text, fill=(255, 255, 255), font=font_name)
+        gaming_name = player["name"].upper()
+        real_name = player.get("real_name", "").strip().upper()
+        
+        if real_name:
+            # Draw real name as main, gaming name as subtitle
+            n_bbox = draw.textbbox((0, 0), real_name, font=font_name)
+            nh = n_bbox[3]-n_bbox[1]
+            r_bbox = draw.textbbox((0, 0), gaming_name, font=font_subtitle)
+            rh = r_bbox[3]-r_bbox[1]
+            total_h = nh + rh + 5
+            draw.text((name_x, y_start + (ROW_H - total_h)//2 - 6), real_name, fill=(255, 255, 255), font=font_name)
+            draw.text((name_x, y_start + (ROW_H - total_h)//2 - 6 + nh + 5), gaming_name, fill=(180, 180, 180), font=font_subtitle)
+        else:
+            n_bbox = draw.textbbox((0, 0), gaming_name, font=font_name)
+            nh = n_bbox[3]-n_bbox[1]
+            draw.text((name_x, y_start + (ROW_H - nh)//2 - 6), gaming_name, fill=(255, 255, 255), font=font_name)
 
         # 5) Points right aligned
         pts_text = str(player["points"])

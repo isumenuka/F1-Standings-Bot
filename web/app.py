@@ -77,6 +77,7 @@ def add():
     if not is_logged_in():
         return redirect(url_for("login"))
     name = request.form.get("name", "").strip()
+    real_name = request.form.get("real_name", "").strip()
     points = request.form.get("points", "0").strip()
     avatar_url = request.form.get("avatar_url", "").strip()
     
@@ -95,7 +96,7 @@ def add():
         pts = int(points)
     except ValueError:
         pts = 0
-    add_player(name, pts, avatar_url)
+    add_player(name, pts, avatar_url, real_name)
     flash(f"✅ Player '{name}' added with {pts} points!", "success")
     return redirect(url_for("index"))
 
@@ -106,6 +107,7 @@ def update(player_id):
     if not is_logged_in():
         return redirect(url_for("login"))
     name = request.form.get("name", "").strip() or None
+    real_name = request.form.get("real_name", "").strip() or None
     points_raw = request.form.get("points", "").strip()
     points = int(points_raw) if points_raw else None
     avatar_url = request.form.get("avatar_url", "").strip() or None
@@ -118,7 +120,7 @@ def update(player_id):
         else:
             flash("⚠️ Failed to upload image, standard update applied.", "warning")
 
-    update_player(player_id, name=name, points=points, avatar_url=avatar_url)
+    update_player(player_id, name=name, points=points, avatar_url=avatar_url, real_name=real_name)
     flash("✅ Player updated!", "success")
     return redirect(url_for("index"))
 
