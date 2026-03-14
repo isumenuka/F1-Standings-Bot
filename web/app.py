@@ -12,7 +12,7 @@ load_dotenv()
 
 from shared.db import (
     load_players, add_player, update_player, delete_player, save_players, update_ranks, bulk_update_players,
-    get_setting, set_setting
+    get_setting, set_setting, get_custom_commands, add_custom_command, delete_custom_command
 )
 
 app = Flask(__name__)
@@ -69,7 +69,8 @@ def index():
     if not is_logged_in():
         return redirect(url_for("login"))
     players = load_players()
-    return render_template("index.html", players=players)
+    commands = get_custom_commands()
+    return render_template("index.html", players=players, custom_commands=commands)
 
 
 # ── Add Player ────────────────────────────────────────────────────────────────
@@ -194,6 +195,63 @@ def settings():
     return {
         "league_url": get_setting("league_url", "https://racenet.com/f1_25/leagues/league/leagueID=25953")
     }
+
+@app.route("/custom_commands", methods=["POST"])
+def manage_custom_commands():
+    if not is_logged_in():
+        return redirect(url_for("login"))
+    
+    action = request.form.get("action")
+    if action == "add":
+        name = request.form.get("name")
+        description = request.form.get("description")
+        response = request.form.get("response")
+        if name and response:
+            if add_custom_command(name, description, response):
+                flash(f"✅ Command /{name} added!", "success")
+                # Mark that sync is needed
+                set_setting("sync_needed", "true")
+            else:
+                flash("❌ Failed to add command. Name might already exist.", "error")
+    
+    return redirect(url_for("index") + "#bot-settings-tab")
+
+@app.route("/custom_commands/delete/<int:cmd_id>", methods=["POST"])
+def delete_cmd(cmd_id):
+    if not is_logged_in():
+        return redirect(url_for("login"))
+    
+    if delete_custom_command(cmd_id):
+        flash("🗑️ Command deleted.", "success")
+        set_setting("sync_needed", "true")
+    else:
+        flash("❌ Failed to delete command.", "error")
+    
+    return redirect(url_for("index") + "#bot-settings-tab")
+
+@app.route("/sync_commands", methods=["POST"])
+def sync_commands():
+    if not is_logged_in():
+        return redirect(url_for("login"))
+    
+    set_setting("sync_needed", "true")
+    flash("🔄 Bot will sync commands on next check (usually within a minute).", "success")
+    return redirect(url_for("index") + "#bot-settings-tab")
+
+@app.route("/update_avatar/<int:player_id>", methods=["POST"])
+def update_avatar(player_id):
+    if not is_logged_in():
+        return redirect(url_for("login"))
+    
+    avatar_file = request.files.get("avatar")
+    if avatar_file and avatar_file.filename:
+        uploaded_url = upload_image(avatar_file)
+        if uploaded_url:
+            update_player(player_id, avatar_url=uploaded_url)
+            return {"success": True, "url": uploaded_url}
+        else:
+            return {"error": "Upload failed"}, 500
+    return {"error": "No file"}, 400
 
 
 if __name__ == "__main__":

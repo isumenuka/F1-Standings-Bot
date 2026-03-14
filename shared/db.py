@@ -51,6 +51,15 @@ def _init_db():
                     value TEXT
                 )
             """)
+            # Custom Commands table
+            cur.execute("""
+                CREATE TABLE IF NOT EXISTS custom_commands (
+                    id SERIAL PRIMARY KEY,
+                    name TEXT UNIQUE NOT NULL,
+                    description TEXT,
+                    response TEXT NOT NULL
+                )
+            """)
     except Exception as e:
         print(f"Failed to initialize database: {e}")
         # We don't crash here so the app can at least start with JSON fallback if needed
@@ -247,3 +256,47 @@ def bulk_update_players(players_data):
                 if "points" in p: target["points"] = int(p["points"])
                 if "rank" in p: target["manual_rank"] = int(p["rank"])
         save_players(players)
+
+# ── Custom Commands ───────────────────────────────────────────────────────────
+
+def get_custom_commands():
+    if DB_URL:
+        try:
+            with get_db_cursor(cursor_factory=psycopg2.extras.RealDictCursor) as cur:
+                cur.execute("SELECT * FROM custom_commands ORDER BY name ASC")
+                return cur.fetchall()
+        except Exception as e:
+            print(f"Error getting custom commands: {e}")
+            return []
+    return []
+
+def add_custom_command(name, description, response):
+    name = name.lower().strip().replace(" ", "-").replace("/", "")
+    if not name: return False
+    
+    if DB_URL:
+        try:
+            with get_db_cursor() as cur:
+                cur.execute("""
+                    INSERT INTO custom_commands (name, description, response)
+                    VALUES (%s, %s, %s)
+                    ON CONFLICT (name) DO UPDATE SET
+                        description = EXCLUDED.description,
+                        response = EXCLUDED.response
+                """, (name, description, response))
+            return True
+        except Exception as e:
+            print(f"Error adding custom command: {e}")
+            return False
+    return False
+
+def delete_custom_command(cmd_id):
+    if DB_URL:
+        try:
+            with get_db_cursor() as cur:
+                cur.execute("DELETE FROM custom_commands WHERE id = %s", (int(cmd_id),))
+            return True
+        except Exception as e:
+            print(f"Error deleting custom command: {e}")
+            return False
+    return False

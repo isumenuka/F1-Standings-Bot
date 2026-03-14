@@ -31,8 +31,9 @@ threading.Thread(target=_run_health_server, daemon=True).start()
 TOKEN = os.getenv("DISCORD_TOKEN")
 APPLICATION_ID = int(os.getenv("APPLICATION_ID", "0"))
 
-from shared.db import load_players, get_setting
+from shared.db import load_players, get_setting, get_custom_commands, update_player, set_setting
 from image_gen import generate_standings_image
+from discord.ext import tasks
 
 
 class StandingsBot(commands.Bot):
@@ -45,12 +46,60 @@ class StandingsBot(commands.Bot):
         )
 
     async def setup_hook(self):
+        # Load custom commands from DB
+        await self.load_custom_commands()
+        
+        # Start the sync checker task
+        self.check_sync_task.start()
+        
         await self.tree.sync()
         print(f"✅ Slash commands synced globally.")
 
     async def on_ready(self):
         print(f"🤖 Logged in as {self.user} (ID: {self.user.id})")
         print("─" * 40)
+
+    async def load_custom_commands(self):
+        """Fetch custom commands from DB and register them."""
+        commands = get_custom_commands()
+        # Remove existing custom commands to avoid duplicates
+        # We identify them by a specific attribute if possible, or just clear non-static ones
+        # For simplicity, we can just clear the tree and re-add static ones, 
+        # but that's overkill. Instead, we'll just add them.
+        # discord.py doesn't have an easy way to 'clear' specific ones without knowing names.
+        
+        for cmd_data in commands:
+            name = cmd_data['name'].lower()
+            response_text = cmd_data['response']
+            
+            # Create a closure for the callback
+            async def make_callback(resp):
+                async def callback(interaction: discord.Interaction):
+                    await interaction.response.send_message(resp)
+                return callback
+
+            # Use app_commands.Command to create a dynamic command
+            new_cmd = app_commands.Command(
+                name=name,
+                description=f"Custom league command: /{name}",
+                callback=await make_callback(response_text)
+            )
+            
+            # Try to add it. If it exists, remove it first.
+            try:
+                self.tree.add_command(new_cmd, override=True)
+            except Exception as e:
+                print(f"[WARN] Could not register custom command /{name}: {e}")
+
+    @tasks.loop(minutes=1)
+    async def check_sync_task(self):
+        """Check if we need to re-sync commands with Discord."""
+        if get_setting("sync_needed") == "true":
+            print("🔄 Syncing commands as requested by admin panel...")
+            set_setting("sync_needed", "false")
+            await self.load_custom_commands()
+            await self.tree.sync()
+            print("✅ Sync complete.")
 
 
 bot = StandingsBot()
@@ -109,34 +158,22 @@ async def league(interaction: discord.Interaction):
 @app_commands.describe(name="Player name", points="Points to add (can be negative)")
 async def addpoints(interaction: discord.Interaction, name: str, points: int):
     """Quick points update from Discord (for convenience)."""
-    # Check if user has admin/manage guild permissions
     if not interaction.user.guild_permissions.manage_guild:
         await interaction.response.send_message("❌ You need **Manage Server** permission to use this command.", ephemeral=True)
         return
 
-    from shared.db import load_players, save_players
-    import json
+    players = load_players()
+    player = next((p for p in players if p['name'].lower() == name.lower()), None)
 
-    raw_path = os.getenv("DATA_PATH", "shared/data.json")
-    with open(raw_path, "r", encoding="utf-8") as f:
-        raw = json.load(f)
-
-    found = False
-    for p in raw:
-        if p["name"].lower() == name.lower():
-            p["points"] += points
-            found = True
-            final_pts = p["points"]
-            break
-
-    if not found:
-        await interaction.response.send_message(f"❌ Player **{name}** not found. Check the name and try again.", ephemeral=True)
+    if not player:
+        await interaction.response.send_message(f"❌ Player **{name}** not found.", ephemeral=True)
         return
 
-    from shared.db import save_players
-    save_players(raw)
+    new_total = max(0, player['points'] + points)
+    update_player(player['id'], player['name'], new_total, player['real_name'], player['avatar_url'])
+    
     await interaction.response.send_message(
-        f"✅ Added **{points} pts** to **{name}** → Total: **{final_pts} pts**",
+        f"✅ Updated **{player['name']}**: {player['points']} → **{new_total} pts**",
         ephemeral=False
     )
 

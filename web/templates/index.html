@@ -169,11 +169,17 @@
                                     </td>
                                     <td>
                                         <div class="player-info">
-                                            {% if player.avatar_url %}
-                                                <img src="{{ player.avatar_url }}" alt="" class="player-avatar" onerror="this.onerror=null; this.parentElement.innerHTML='<div class=\'avatar-fallback\'>{{ player.name[:2].upper() }}</div>';">
-                                            {% else %}
-                                                <div class="avatar-fallback">{{ player.name[:2].upper() }}</div>
-                                            {% endif %}
+                                            <div class="avatar-container" onclick="triggerAvatarUpload('{{ player.id }}')" title="Click to change avatar">
+                                                {% if player.avatar_url %}
+                                                    <img src="{{ player.avatar_url }}" alt="" class="player-avatar" id="avatar-img-{{ player.id }}" onerror="this.onerror=null; this.src='https://placehold.co/40x40/1a1b26/white?text={{ player.name[:1] }}';">
+                                                {% else %}
+                                                    <div class="avatar-fallback" id="avatar-fallback-{{ player.id }}">{{ player.name[:2].upper() }}</div>
+                                                {% endif %}
+                                                <div class="avatar-overlay">
+                                                    <i class="fas fa-camera"></i>
+                                                </div>
+                                                <input type="file" id="avatar-input-{{ player.id }}" style="display: none;" accept="image/*" onchange="uploadAvatar('{{ player.id }}')">
+                                            </div>
                                             <input type="text" class="input-name edit-trigger" value="{{ player.name }}" style="background: transparent; border: none; font-weight: 700; width: 100%;">
                                         </div>
                                     </td>
@@ -191,7 +197,7 @@
                                         </form>
                                     </td>
                                 </tr>
-                                endfor %}
+                                {% endfor %}
                             </tbody>
                         </table>
                     </div>
@@ -221,13 +227,79 @@
                 </form>
             </div>
             
-            <div class="card" style="background: rgba(16, 185, 129, 0.05); border-color: rgba(16, 185, 129, 0.2);">
+            <div class="card" style="background: rgba(16, 185, 129, 0.05); border-color: rgba(16, 185, 129, 0.2); margin-bottom: 24px;">
                 <h3 style="font-size: 16px; margin-bottom: 12px; color: var(--success);">
                     <i class="fas fa-info-circle"></i> Bot Commands Tip
                 </h3>
                 <p style="font-size: 14px; color: var(--text-muted);">
                     When you update the league URL here, the Discord bot will automatically use the new link next time a user runs <code>/league</code> or <code>/standings</code>. No bot restart is required!
                 </p>
+            </div>
+
+            <div class="card">
+                <div class="section-header">
+                    <h2 class="section-title"><i class="fas fa-terminal"></i> Custom Commands</h2>
+                    <form action="{{ url_for('sync_commands') }}" method="POST">
+                        <button type="submit" class="btn btn-ghost btn-sm" style="color: var(--accent-color);">
+                            <i class="fas fa-sync"></i> Sync Bot
+                        </button>
+                    </form>
+                </div>
+                
+                <div class="table-container" style="margin-bottom: 24px;">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Command</th>
+                                <th>Response</th>
+                                <th width="80">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for cmd in custom_commands %}
+                            <tr>
+                                <td style="font-family: monospace; color: var(--accent-color);">/{{ cmd.name }}</td>
+                                <td style="font-size: 13px; color: var(--text-muted);">{{ cmd.response[:50] }}{{ '...' if cmd.response|length > 50 }}</td>
+                                <td>
+                                    <form action="{{ url_for('delete_cmd', cmd_id=cmd.id) }}" method="POST" onsubmit="return confirm('Delete this command?');">
+                                        <button type="submit" class="btn btn-danger btn-sm">
+                                            <i class="fas fa-times"></i>
+                                        </button>
+                                    </form>
+                                </td>
+                            </tr>
+                            {% else %}
+                            <tr>
+                                <td colspan="3" style="text-align: center; color: var(--text-muted); padding: 20px;">No custom commands yet.</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+
+                <div style="border-top: 1px solid var(--border-color); padding-top: 24px;">
+                    <h3 style="font-size: 14px; margin-bottom: 16px; color: var(--text-muted);">Add New Command</h3>
+                    <form action="{{ url_for('manage_custom_commands') }}" method="POST">
+                        <input type="hidden" name="action" value="add">
+                        <div class="input-row">
+                            <div class="form-group" style="flex: 1;">
+                                <label class="form-label">Command Name</label>
+                                <div style="display: flex; align-items: center; background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 8px; padding: 0 12px;">
+                                    <span style="color: var(--text-muted); padding-right: 4px;">/</span>
+                                    <input type="text" name="name" placeholder="rules" required style="border: none; background: transparent; padding-left: 0;">
+                                </div>
+                            </div>
+                            <div class="form-group" style="flex: 2;">
+                                <label class="form-label">Response Text</label>
+                                <input type="text" name="response" placeholder="League rules: https://..." required>
+                            </div>
+                            <div class="form-group" style="flex: 0;">
+                                <label class="form-label">&nbsp;</label>
+                                <button type="submit" class="btn btn-primary">Add</button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
             </div>
         </div>
     </main>
@@ -336,12 +408,11 @@
                     btn.innerHTML = '<i class="fas fa-check"></i> Saved!';
                     btn.style.background = 'var(--success)';
                     setTimeout(() => {
-                        document.getElementById('save-bar').classList.remove('visible');
                         btn.innerHTML = originalContent;
                         btn.style.background = '';
                         btn.disabled = false;
-                        window.location.reload();
-                    }, 1000);
+                        document.getElementById('save-bar').classList.remove('visible');
+                    }, 2000);
                 } else {
                     alert('Failed to save changes.');
                     btn.innerHTML = originalContent;
@@ -354,6 +425,68 @@
                 btn.disabled = false;
             }
         }
+
+        function triggerAvatarUpload(playerId) {
+            document.getElementById('avatar-input-' + playerId).click();
+        }
+
+        async function uploadAvatar(playerId) {
+            const input = document.getElementById('avatar-input-' + playerId);
+            if (!input.files || !input.files[0]) return;
+
+            const formData = new FormData();
+            formData.append('avatar', input.files[0]);
+
+            // Show loading state on the avatar
+            const container = input.closest('.avatar-container');
+            container.style.opacity = '0.5';
+
+            try {
+                const response = await fetch('/update_avatar/' + playerId, {
+                    method: 'POST',
+                    body: formData
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data.url) {
+                        const img = document.getElementById('avatar-img-' + playerId);
+                        if (img) {
+                            img.src = data.url;
+                        } else {
+                            // Replace fallback with image
+                            const fallback = document.getElementById('avatar-fallback-' + playerId);
+                            if (fallback) {
+                                const newImg = document.createElement('img');
+                                newImg.src = data.url;
+                                newImg.className = 'player-avatar';
+                                newImg.id = 'avatar-img-' + playerId;
+                                container.insertBefore(newImg, fallback);
+                                fallback.remove();
+                            }
+                        }
+                    }
+                } else {
+                    alert('Failed to upload avatar.');
+                }
+            } catch (error) {
+                console.error('Error uploading avatar:', error);
+                alert('An error occurred.');
+            } finally {
+                container.style.opacity = '1';
+            }
+        }
+
+        // Handle URL hash for tabs on load
+        window.addEventListener('DOMContentLoaded', () => {
+            if (window.location.hash === '#bot-settings-tab') {
+                switchTab('settings');
+                // Set the correct tab button as active
+                const tabs = document.querySelectorAll('.tab');
+                tabs[0].classList.remove('active');
+                tabs[1].classList.add('active');
+            }
+        });
     </script>
 </body>
 </html>
