@@ -96,9 +96,9 @@
               <th>DELETE</th>
             </tr>
           </thead>
-          <tbody>
+          <tbody id="sortable-standings">
             {% for player in players %}
-            <tr class="row-{{ loop.index % 5 }}">
+            <tr class="row-{{ loop.index % 5 }}" data-id="{{ player.id }}" style="cursor: grab;">
               <td class="pos">{{ loop.index }}</td>
               <td class="player-name">
                 {% if player.avatar_url %}
@@ -154,5 +154,45 @@
     </section>
 
   </main>
+  
+  <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
+  <script>
+    document.addEventListener("DOMContentLoaded", function() {
+      const el = document.getElementById('sortable-standings');
+      if (el) {
+        new Sortable(el, {
+          animation: 150,
+          ghostClass: 'sortable-ghost',
+          onEnd: function (evt) {
+            // Get all ordered IDs
+            const rows = el.querySelectorAll('tr[data-id]');
+            const orderedIds = Array.from(rows).map(row => row.getAttribute('data-id'));
+            
+            // Send to backend
+            fetch('/update_ranks', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({ ordered_ids: orderedIds }),
+            })
+            .then(response => response.json())
+            .then(data => {
+              if(data.success) {
+                  // Reload to see POS numbers update
+                  window.location.reload();
+              } else {
+                  alert(data.error || "Failed to update ranks.");
+              }
+            })
+            .catch((error) => {
+              console.error('Error:', error);
+              alert("Failed to communicate with server.");
+            });
+          },
+        });
+      }
+    });
+  </script>
 </body>
 </html>

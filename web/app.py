@@ -11,7 +11,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 load_dotenv()
 
 from shared.db import (
-    load_players, add_player, update_player, delete_player, save_players
+    load_players, add_player, update_player, delete_player, save_players, update_ranks
 )
 
 app = Flask(__name__)
@@ -148,6 +148,20 @@ def set_points(player_id):
     update_player(player_id, points=points)
     flash("✅ Points updated!", "success")
     return redirect(url_for("index"))
+
+
+# ── Update Ranks (Drag & Drop) ────────────────────────────────────────────────
+@app.route("/update_ranks", methods=["POST"])
+def update_ranks_route():
+    if not is_logged_in():
+        return {"error": "Unauthorized"}, 401
+    
+    data = request.get_json()
+    if not data or "ordered_ids" not in data:
+        return {"error": "Bad Request"}, 400
+        
+    update_ranks(data["ordered_ids"])
+    return {"success": True}
 
 
 if __name__ == "__main__":

@@ -29,21 +29,25 @@ def _init_db():
                 avatar_url TEXT
             )
         """)
+        # Add manual_rank column if it doesn't exist
+        cur.execute("ALTER TABLE players ADD COLUMN IF NOT EXISTS manual_rank INTEGER;")
 
 _init_db()
 
 def load_players():
-    """Load all players, sorted by points descending."""
+    """Load all players, sorted by manual_rank ascending (if set), then points descending."""
     if DB_URL:
         with get_db_cursor(cursor_factory=RealDictCursor) as cur:
-            cur.execute("SELECT * FROM players ORDER BY points DESC")
+            cur.execute("SELECT * FROM players ORDER BY manual_rank ASC NULLS LAST, points DESC")
             return [dict(row) for row in cur.fetchall()]
     else:
         if not os.path.exists(DATA_PATH):
             return []
         with open(DATA_PATH, "r", encoding="utf-8") as f:
             players = json.load(f)
+        # Sort by points descending first, then by rank if exists
         players.sort(key=lambda p: p["points"], reverse=True)
+        players.sort(key=lambda p: p.get("manual_rank", 9999))
         return players
 
 def save_players(players):
@@ -127,4 +131,29 @@ def delete_player(player_id):
             raw = json.load(f)
         raw = [p for p in raw if p["id"] != int(player_id)]
         save_players(raw)
+
+def update_ranks(ordered_player_ids):
+    """Update manual unk based on ordered list of IDs."""
+    if DB_URL:
+        with get_db_cursor() as cur:
+            # First reset all ranks to NULL
+            cur.execute("UPDATE players SET manual_rank = NULL")
+            # Then set ranks for provided IDs
+            for rank, pid in enumerate(ordered_player_ids, start=1):
+                cur.execute("UPDATE players SET manual_rank = %s WHERE id = %s", (rank, int(pid)))
+    else:
+        players = load_players()
+        # Create lookup
+        p_dict = {p["id"]: p for p in players}
+        
+        # Reset all ranks
+        for p in players:
+            p.pop("manual_rank", None)
+            
+        # Set new ranks
+        for rank, pid in enumerate(ordered_player_ids, start=1):
+            if int(pid) in p_dict:
+                p_dict[int(pid)]["manual_rank"] = rank
+                
+        save_players(players)
 
