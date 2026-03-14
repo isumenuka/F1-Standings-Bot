@@ -209,35 +209,6 @@
         <div id="settings-content" class="tab-content">
             <div class="card">
                 <div class="section-header">
-                    <h2 class="section-title"><i class="fas fa-cog"></i> Bot Configuration</h2>
-                </div>
-                <form action="{{ url_for('settings') }}" method="POST">
-                    <div class="form-group" style="margin-bottom: 24px;">
-                        <label class="form-label">Racenet League URL</label>
-                        <input type="url" name="league_url" id="league_url_input" placeholder="https://racenet.com/..." style="width: 100%;">
-                        <span class="text-muted" style="font-size: 12px; margin-top: 8px; display: block;">
-                            This link will be used in the bot's <code>/league</code> and <code>/standings</code> commands.
-                        </span>
-                    </div>
-                    <div style="display: flex; gap: 12px;">
-                        <button type="submit" class="btn btn-primary">
-                            <i class="fas fa-save"></i> Save Settings
-                        </button>
-                    </div>
-                </form>
-            </div>
-            
-            <div class="card" style="background: rgba(16, 185, 129, 0.05); border-color: rgba(16, 185, 129, 0.2); margin-bottom: 24px;">
-                <h3 style="font-size: 16px; margin-bottom: 12px; color: var(--success);">
-                    <i class="fas fa-info-circle"></i> Bot Commands Tip
-                </h3>
-                <p style="font-size: 14px; color: var(--text-muted);">
-                    When you update the league URL here, the Discord bot will automatically use the new link next time a user runs <code>/league</code> or <code>/standings</code>. No bot restart is required!
-                </p>
-            </div>
-
-            <div class="card">
-                <div class="section-header">
                     <h2 class="section-title"><i class="fas fa-terminal"></i> Custom Commands</h2>
                     <form action="{{ url_for('sync_commands') }}" method="POST">
                         <button type="submit" class="btn btn-ghost btn-sm" style="color: var(--accent-color);">
@@ -325,24 +296,6 @@
             
             event.currentTarget.classList.add('active');
             document.getElementById(tabId + '-content').classList.add('active');
-            
-            if (tabId === 'settings') {
-                fetchSettings();
-            }
-        }
-
-        async function fetchSettings() {
-            try {
-                const response = await fetch('/settings');
-                if (response.ok) {
-                    const data = await response.json();
-                    if (data.league_url) {
-                        document.getElementById('league_url_input').value = data.league_url;
-                    }
-                }
-            } catch (error) {
-                console.error('Error fetching settings:', error);
-            }
         }
 
         // Sortable & Save logic

@@ -180,21 +180,7 @@ def bulk_update():
         print(f"Bulk update failed: {e}")
         return {"error": str(e)}, 500
 
-@app.route("/settings", methods=["GET", "POST"])
-def settings():
-    if not is_logged_in():
-        return redirect(url_for("login"))
-        
-    if request.method == "POST":
-        league_url = request.form.get("league_url")
-        if league_url:
-            set_setting("league_url", league_url)
-            flash("Settings updated successfully!", "success")
-        return redirect(url_for("index"))
-        
-    return {
-        "league_url": get_setting("league_url", "https://racenet.com/f1_25/leagues/league/leagueID=25953")
-    }
+    return redirect(url_for("index") + "#bot-settings-tab")
 
 @app.route("/custom_commands", methods=["POST"])
 def manage_custom_commands():

@@ -133,8 +133,10 @@ async def standings(interaction: discord.Interaction):
         image_buf = generate_standings_image(players, "DRIVER STANDINGS")
         file = discord.File(fp=image_buf, filename="standings.png")
 
-        # Get dynamic league URL
-        league_url = get_setting("league_url", "https://racenet.com/f1_25/leagues/league/leagueID=25953")
+        # Get dynamic league URL from custom commands
+        custom_cmds = get_custom_commands()
+        league_cmd = next((c for c in custom_cmds if c['name'].lower() == 'league'), None)
+        league_url = league_cmd['response'] if league_cmd else "https://racenet.com/f1_25/leagues/league/leagueID=25953"
         
         content = (
             "🏆 **Driver Standings**\n"
@@ -150,22 +152,6 @@ async def standings(interaction: discord.Interaction):
     except Exception as e:
         print(f"[ERROR] Image generation failed: {e}")
         await interaction.followup.send(f"❌ Failed to generate standings image. Error: {e}")
-
-@bot.tree.command(name="league", description="Get the link to the official league page")
-async def league(interaction: discord.Interaction):
-    """Get the link to the official league page."""
-    league_url = get_setting("league_url", "https://racenet.com/f1_25/leagues/league/leagueID=25953")
-    
-    embed = discord.Embed(
-        title="🏁 Official League Page",
-        description=f"Click the button below to view the full league standings, results, and upcoming races on Racenet.",
-        color=0xFF1801 # F1 Red
-    )
-    
-    view = discord.ui.View()
-    view.add_item(discord.ui.Button(label="Open Racenet League", url=league_url, style=discord.ButtonStyle.link))
-    
-    await interaction.response.send_message(embed=embed, view=view)
 
 
 @bot.tree.command(name="addpoints", description="[Admin] Add points to a player by name")
