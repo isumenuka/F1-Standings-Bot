@@ -70,15 +70,12 @@ async def standings(interaction: discord.Interaction):
         image_buf = generate_standings_image(players, "DRIVER STANDINGS", "Season 2025")
         file = discord.File(fp=image_buf, filename="standings.png")
 
-        embed = discord.Embed(
-            title="🏆 Driver Standings",
-            description="Current season leaderboard\n\n🏎️ **[Click here to view the Gaming Hassa YT League on Racenet](https://racenet.com/f1_25/leagues/league/leagueID=25953)**",
-            color=discord.Color.from_rgb(220, 40, 40)
+        content = (
+            "🏆 **Driver Standings**\n"
+            "🏎️ **[Click here to view the Gaming Hassa YT League on Racenet](https://racenet.com/f1_25/leagues/league/leagueID=25953)**\n"
+            "*Use `/standings` anytime to refresh*"
         )
-        embed.set_image(url="attachment://standings.png")
-        embed.set_footer(text="Use /standings anytime to refresh")
-
-        await interaction.followup.send(file=file, embed=embed)
+        await interaction.followup.send(content=content, file=file)
 
     except Exception as e:
         print(f"[ERROR] Image generation failed: {e}")
