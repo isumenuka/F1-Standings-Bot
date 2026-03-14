@@ -12,7 +12,7 @@ load_dotenv()
 
 from shared.db import (
     load_players, add_player, update_player, delete_player, save_players, update_ranks, bulk_update_players,
-    get_setting, set_setting, get_custom_commands, add_custom_command, delete_custom_command
+    get_setting, set_setting, get_custom_commands, add_custom_command, delete_custom_command, update_custom_command
 )
 
 app = Flask(__name__)
@@ -199,6 +199,17 @@ def manage_custom_commands():
                 set_setting("sync_needed", "true")
             else:
                 flash("❌ Failed to add command. Name might already exist.", "error")
+    
+    elif action == "update":
+        cmd_id = request.form.get("id")
+        name = request.form.get("name")
+        response = request.form.get("response")
+        if cmd_id and name and response:
+            if update_custom_command(cmd_id, name, response):
+                flash(f"✅ Command /{name} updated!", "success")
+                set_setting("sync_needed", "true")
+            else:
+                flash("❌ Failed to update command.", "error")
     
     return redirect(url_for("index") + "#bot-settings-tab")
 

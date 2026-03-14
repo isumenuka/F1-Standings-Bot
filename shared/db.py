@@ -300,3 +300,21 @@ def delete_custom_command(cmd_id):
             print(f"Error deleting custom command: {e}")
             return False
     return False
+
+def update_custom_command(cmd_id, name, response):
+    name = name.lower().strip().replace(" ", "-").replace("/", "")
+    if not name: return False
+    
+    if DB_URL:
+        try:
+            with get_db_cursor() as cur:
+                cur.execute("""
+                    UPDATE custom_commands 
+                    SET name = %s, response = %s
+                    WHERE id = %s
+                """, (name, response, int(cmd_id)))
+            return True
+        except Exception as e:
+            print(f"Error updating custom command: {e}")
+            return False
+    return False
