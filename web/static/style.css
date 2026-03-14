@@ -187,7 +187,8 @@ header {
 input[type="text"],
 input[type="number"],
 input[type="url"],
-input[type="password"] {
+input[type="password"],
+textarea {
   background: var(--surface-alt);
   border: 1px solid var(--border-color);
   border-radius: 8px;
@@ -199,7 +200,8 @@ input[type="password"] {
   outline: none;
 }
 
-input:focus {
+input:focus,
+textarea:focus {
   border-color: var(--accent-color);
   box-shadow: 0 0 0 4px var(--accent-glow);
 }
@@ -294,7 +296,7 @@ tbody tr:hover {
 
 td {
   padding: 16px;
-  vertical-align: middle;
+  vertical-align: top;
 }
 
 .player-info {

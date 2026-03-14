@@ -230,7 +230,7 @@
                             {% for cmd in custom_commands %}
                             <tr>
                                 <td style="font-family: monospace; color: var(--accent-color);">/{{ cmd.name }}</td>
-                                <td style="font-size: 13px; color: var(--text-muted);">{{ cmd.response[:50] }}{{ '...' if cmd.response|length > 50 }}</td>
+                                <td style="font-size: 13px; color: var(--text-muted); white-space: pre-wrap; line-height: 1.5; max-width: 400px;">{{ cmd.response }}</td>
                                 <td>
                                     <form action="{{ url_for('delete_cmd', cmd_id=cmd.id) }}" method="POST" onsubmit="return confirm('Delete this command?');">
                                         <button type="submit" class="btn btn-danger btn-sm">
@@ -261,8 +261,12 @@
                                 </div>
                             </div>
                             <div class="form-group" style="flex: 2;">
-                                <label class="form-label">Response Text</label>
-                                <input type="text" name="response" placeholder="League rules: https://..." required>
+                                <label class="form-label">Response Text <small>(Markdown supported)</small></label>
+                                <textarea name="response" placeholder="Enter command response. Markdown is supported!
+Example:
+**Bold text**
+* Italic item
+* [Link](https://...)" required style="width: 100%; min-height: 100px; resize: vertical;"></textarea>
                             </div>
                             <div class="form-group" style="flex: 0;">
                                 <label class="form-label">&nbsp;</label>
