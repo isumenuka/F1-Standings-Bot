@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Admin Panel — Standings Bot</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}"/>
+</head>
+<body>
+  <!-- ── Header ── -->
+  <header>
+    <div class="header-inner">
+      <div class="brand">
+        <span class="brand-icon">🏆</span>
+        <div>
+          <span class="brand-title">Standings Bot</span>
+          <span class="brand-sub">Admin Panel</span>
+        </div>
+      </div>
+      <a href="/logout" class="btn-logout">Logout</a>
+    </div>
+  </header>
+
+  <main>
+
+    <!-- ── Flash messages ── -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        {% for category, message in messages %}
+          <div class="alert alert-{{ category }}">{{ message }}</div>
+        {% endfor %}
+      {% endif %}
+    {% endwith %}
+
+    <!-- ── Stats bar ── -->
+    <div class="stats-bar">
+      <div class="stat-card">
+        <span class="stat-value">{{ players|length }}</span>
+        <span class="stat-label">Total Players</span>
+      </div>
+      <div class="stat-card">
+        <span class="stat-value">{{ players[0].points if players else 0 }}</span>
+        <span class="stat-label">Top Score</span>
+      </div>
+      <div class="stat-card">
+        <span class="stat-value">{{ players | sum(attribute='points') }}</span>
+        <span class="stat-label">Total Points</span>
+      </div>
+    </div>
+
+    <!-- ── Add Player Form ── -->
+    <section class="panel">
+      <h2 class="panel-title">➕ Add New Player</h2>
+      <form method="POST" action="/add" class="add-form">
+        <div class="form-row">
+          <div class="form-group">
+            <label>Player Name</label>
+            <input type="text" name="name" placeholder="e.g. wolfygear" required/>
+          </div>
+          <div class="form-group form-group--sm">
+            <label>Points</label>
+            <input type="number" name="points" placeholder="0" value="0" min="0"/>
+          </div>
+          <div class="form-group form-group--lg">
+            <label>Avatar URL <span class="optional">(optional)</span></label>
+            <input type="url" name="avatar_url" placeholder="https://..."/>
+          </div>
+          <div class="form-group form-group--btn">
+            <label>&nbsp;</label>
+            <button type="submit" class="btn btn-primary">Add Player</button>
+          </div>
+        </div>
+      </form>
+    </section>
+
+    <!-- ── Standings Table ── -->
+    <section class="panel">
+      <h2 class="panel-title">📋 Current Standings</h2>
+      {% if players %}
+      <div class="table-wrapper">
+        <table>
+          <thead>
+            <tr>
+              <th>POS</th>
+              <th>PLAYER</th>
+              <th>POINTS</th>
+              <th>SET POINTS</th>
+              <th>RENAME</th>
+              <th>DELETE</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for player in players %}
+            <tr class="row-{{ loop.index % 5 }}">
+              <td class="pos">{{ loop.index }}</td>
+              <td class="player-name">
+                <span class="avatar-badge">{{ player.name[:2].upper() }}</span>
+                {{ player.name }}
+              </td>
+              <td class="points-cell">{{ player.points }}</td>
+
+              <!-- Set exact points -->
+              <td>
+                <form method="POST" action="/set_points/{{ player.id }}" class="inline-form">
+                  <input type="number" name="points" value="{{ player.points }}" class="input-sm" min="0"/>
+                  <button type="submit" class="btn btn-save">Set</button>
+                </form>
+              </td>
+
+              <!-- Rename player -->
+              <td>
+                <form method="POST" action="/update/{{ player.id }}" class="inline-form">
+                  <input type="text" name="name" value="{{ player.name }}" class="input-name"/>
+                  <button type="submit" class="btn btn-save">Rename</button>
+                </form>
+              </td>
+
+              <!-- Delete -->
+              <td>
+                <form method="POST" action="/delete/{{ player.id }}" onsubmit="return confirm('Delete {{ player.name }}?')">
+                  <button type="submit" class="btn btn-danger">🗑️</button>
+                </form>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% else %}
+        <div class="empty-state">No players yet. Add your first player above! 🏁</div>
+      {% endif %}
+    </section>
+
+  </main>
+</body>
+</html>

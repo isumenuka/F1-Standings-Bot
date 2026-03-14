@@ -1,0 +1,11 @@
+.env
+__pycache__/
+*.pyc
+*.pyo
+fonts/
+standings_preview.png
+*.egg-info/
+dist/
+build/
+.venv/
+venv/
