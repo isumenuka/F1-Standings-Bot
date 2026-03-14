@@ -1,15 +1,32 @@
 import os
 import sys
+import threading
 import discord
 from discord.ext import commands
 from discord import app_commands
 from dotenv import load_dotenv
+from flask import Flask
 import io
 
 # Add parent directory to path for shared module
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 load_dotenv()
+
+# ── Tiny health-check server (required by Render web services) ───────────────
+_health_app = Flask("health")
+
+@_health_app.route("/")
+def _health():
+    return "OK", 200
+
+def _run_health_server():
+    port = int(os.environ.get("PORT", 8080))
+    _health_app.run(host="0.0.0.0", port=port, use_reloader=False)
+
+threading.Thread(target=_run_health_server, daemon=True).start()
+# ─────────────────────────────────────────────────────────────────────────────
+
 
 TOKEN = os.getenv("DISCORD_TOKEN")
 APPLICATION_ID = int(os.getenv("APPLICATION_ID", "0"))
