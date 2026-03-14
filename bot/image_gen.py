@@ -53,22 +53,22 @@ def darken(color, factor=0.5):
     return tuple(int(c * factor) for c in color)
 
 # ── Dimensions ───────────────────────────────────────────────────────────────
-IMG_WIDTH   = 1080
-TITLE_H     = 180
-ROW_H       = 80
-FOOTER_H    = 80
-POS_W       = 100
-PADDING_X   = 25
-AVATAR_SIZE = 60
+IMG_WIDTH   = 1620
+TITLE_H     = 270
+ROW_H       = 120
+FOOTER_H    = 120
+POS_W       = 150
+PADDING_X   = 38
+AVATAR_SIZE = 90
 
 def draw_avatar_placeholder(draw, cx, cy, r, color, initials, font):
     """Draw a fallback circle with initials."""
     draw.ellipse((cx - r, cy - r, cx + r, cy + r), fill=darken(color, 0.4))
-    draw.ellipse((cx - r + 2, cy - r + 2, cx + r - 2, cy + r - 2), outline=(255, 255, 255, 80), width=2)
+    draw.ellipse((cx - r + 3, cy - r + 3, cx + r - 3, cy + r - 3), outline=(255, 255, 255, 80), width=3)
     text = initials[:2].upper()
     bbox = draw.textbbox((0, 0), text, font=font)
     tw, th = bbox[2] - bbox[0], bbox[3] - bbox[1]
-    draw.text((cx - tw // 2, cy - th // 2 - 2), text, fill=(255, 255, 255), font=font)
+    draw.text((cx - tw // 2, cy - th // 2 - 3), text, fill=(255, 255, 255), font=font)
 
 def load_avatar(url, size=(AVATAR_SIZE, AVATAR_SIZE)):
     if not url:
@@ -105,45 +105,45 @@ def generate_standings_image(players, title="DRIVER STANDINGS"):
     img = Image.new("RGB", (IMG_WIDTH, img_height), (15, 15, 15))
     draw = ImageDraw.Draw(img)
 
-    font_title    = load_font(FONT_BOLD_PATH, 55)
-    font_subtitle = load_font(FONT_REG_PATH, 24)
-    font_pos      = load_font(FONT_BOLD_PATH, 36)
-    font_name     = load_font(FONT_BOLD_PATH, 32)
-    font_pts      = load_font(FONT_BOLD_PATH, 42)
-    font_pts_lbl  = load_font(FONT_REG_PATH, 16)
-    font_init     = load_font(FONT_BOLD_PATH, 22)
+    font_title    = load_font(FONT_BOLD_PATH, 82)
+    font_subtitle = load_font(FONT_REG_PATH, 36)
+    font_pos      = load_font(FONT_BOLD_PATH, 54)
+    font_name     = load_font(FONT_BOLD_PATH, 48)
+    font_pts      = load_font(FONT_BOLD_PATH, 63)
+    font_pts_lbl  = load_font(FONT_REG_PATH, 24)
+    font_init     = load_font(FONT_BOLD_PATH, 33)
 
     # ── Header ─────────────────────────────────────────────────────────────
     # Dark grey background
     draw.rectangle([(0, 0), (IMG_WIDTH, TITLE_H)], fill=(12, 12, 15))
     # Signature F1 Red Stripes
-    draw.rectangle([(0, 0), (IMG_WIDTH, 12)], fill=(225, 6, 0))
-    draw.rectangle([(0, TITLE_H - 45), (IMG_WIDTH, TITLE_H - 35)], fill=(225, 6, 0))
+    draw.rectangle([(0, 0), (IMG_WIDTH, 18)], fill=(225, 6, 0))
+    draw.rectangle([(0, TITLE_H - 68), (IMG_WIDTH, TITLE_H - 52)], fill=(225, 6, 0))
 
     # Title text
     bbox = draw.textbbox((0, 0), title, font=font_title)
     tw = bbox[2] - bbox[0]
-    draw.text(((IMG_WIDTH - tw) // 2, 35), title.upper(), fill=(255, 255, 255), font=font_title)
+    draw.text(((IMG_WIDTH - tw) // 2, 52), title.upper(), fill=(255, 255, 255), font=font_title)
 
     # Subtitle
     sub = "GAMING HASSA YT LEAGUE"
     bbox2 = draw.textbbox((0, 0), sub, font=font_subtitle)
     sw = bbox2[2] - bbox2[0]
-    draw.text(((IMG_WIDTH - sw) // 2, 95), sub, fill=(180, 180, 180), font=font_subtitle)
+    draw.text(((IMG_WIDTH - sw) // 2, 142), sub, fill=(180, 180, 180), font=font_subtitle)
 
     # Column Labels
-    hdr_y = TITLE_H - 25
-    draw.text((32, hdr_y), "POS", fill=(180, 180, 180), font=font_pts_lbl)
-    draw.text((POS_W + 15, hdr_y), "PLAYER", fill=(180, 180, 180), font=font_pts_lbl)
+    hdr_y = TITLE_H - 38
+    draw.text((48, hdr_y), "POS", fill=(180, 180, 180), font=font_pts_lbl)
+    draw.text((POS_W + 22, hdr_y), "PLAYER", fill=(180, 180, 180), font=font_pts_lbl)
     
     pb = draw.textbbox((0, 0), "POINTS", font=font_pts_lbl)
     pw = pb[2] - pb[0]
-    draw.text((IMG_WIDTH - pw - PADDING_X - 15, hdr_y), "POINTS", fill=(180, 180, 180), font=font_pts_lbl)
+    draw.text((IMG_WIDTH - pw - PADDING_X - 22, hdr_y), "POINTS", fill=(180, 180, 180), font=font_pts_lbl)
 
     # ── Rows ───────────────────────────────────────────────────────────────
     for i, player in enumerate(players):
         y_start = TITLE_H + i * ROW_H
-        y_end   = y_start + ROW_H - 2
+        y_end   = y_start + ROW_H - 3
 
         color_idx = i % len(ROW_COLORS)
         row_color = ROW_COLORS[color_idx]
@@ -154,14 +154,14 @@ def generate_standings_image(players, title="DRIVER STANDINGS"):
         pos_text = str(i + 1)
         p_bbox = draw.textbbox((0, 0), pos_text, font=font_pos)
         pw, ph = p_bbox[2]-p_bbox[0], p_bbox[3]-p_bbox[1]
-        draw.text(((POS_W - pw)//2, y_start + (ROW_H - ph)//2 - 6), pos_text, fill=(255, 255, 255), font=font_pos)
+        draw.text(((POS_W - pw)//2, y_start + (ROW_H - ph)//2 - 9), pos_text, fill=(255, 255, 255), font=font_pos)
 
         # 2) Team Color block (Main)
         draw.rectangle([(POS_W, y_start), (IMG_WIDTH, y_end)], fill=row_color)
 
         # 3) Avatar
         avatar_img = load_avatar(player.get("avatar_url"))
-        avatar_x = POS_W + 20
+        avatar_x = POS_W + 30
         # Center avatar vertically
         avatar_y = y_start + (ROW_H - AVATAR_SIZE) // 2
         
@@ -172,7 +172,7 @@ def generate_standings_image(players, title="DRIVER STANDINGS"):
             draw_avatar_placeholder(draw, avatar_x + AVATAR_SIZE//2, y_start + ROW_H//2, AVATAR_SIZE//2, row_color, initials, font_init)
 
         # 4) Name
-        name_x = avatar_x + AVATAR_SIZE + 20
+        name_x = avatar_x + AVATAR_SIZE + 30
         gaming_name = player["name"].upper()
         real_name = player.get("real_name", "").strip().upper()
         
@@ -182,31 +182,31 @@ def generate_standings_image(players, title="DRIVER STANDINGS"):
             nh = n_bbox[3]-n_bbox[1]
             r_bbox = draw.textbbox((0, 0), gaming_name, font=font_subtitle)
             rh = r_bbox[3]-r_bbox[1]
-            total_h = nh + rh + 5
-            draw.text((name_x, y_start + (ROW_H - total_h)//2 - 6), real_name, fill=(255, 255, 255), font=font_name)
-            draw.text((name_x, y_start + (ROW_H - total_h)//2 - 6 + nh + 5), gaming_name, fill=(180, 180, 180), font=font_subtitle)
+            total_h = nh + rh + 8
+            draw.text((name_x, y_start + (ROW_H - total_h)//2 - 9), real_name, fill=(255, 255, 255), font=font_name)
+            draw.text((name_x, y_start + (ROW_H - total_h)//2 - 9 + nh + 8), gaming_name, fill=(180, 180, 180), font=font_subtitle)
         else:
             n_bbox = draw.textbbox((0, 0), gaming_name, font=font_name)
             nh = n_bbox[3]-n_bbox[1]
-            draw.text((name_x, y_start + (ROW_H - nh)//2 - 6), gaming_name, fill=(255, 255, 255), font=font_name)
+            draw.text((name_x, y_start + (ROW_H - nh)//2 - 9), gaming_name, fill=(255, 255, 255), font=font_name)
 
         # 5) Points right aligned
         pts_text = str(player["points"])
         pts_bbox = draw.textbbox((0, 0), pts_text, font=font_pts)
         pt_w = pts_bbox[2]-pts_bbox[0]
         pt_h = pts_bbox[3]-pts_bbox[1]
-        pts_x = IMG_WIDTH - pt_w - PADDING_X - 15
-        draw.text((pts_x, y_start + (ROW_H - pt_h)//2 - 8), pts_text, fill=(255, 255, 255), font=font_pts)
+        pts_x = IMG_WIDTH - pt_w - PADDING_X - 22
+        draw.text((pts_x, y_start + (ROW_H - pt_h)//2 - 12), pts_text, fill=(255, 255, 255), font=font_pts)
 
     # ── Footer ─────────────────────────────────────────────────────────────
     fy = TITLE_H + num * ROW_H
     draw.rectangle([(0, fy), (IMG_WIDTH, img_height)], fill=(12, 12, 15))
-    draw.rectangle([(0, img_height - 12), (IMG_WIDTH, img_height)], fill=(225, 6, 0)) # Bottom stripe
+    draw.rectangle([(0, img_height - 18), (IMG_WIDTH, img_height)], fill=(225, 6, 0)) # Bottom stripe
     
     footer_text = "https://racenet.com/f1_25/leagues/league/leagueID=25953"
     ftb = draw.textbbox((0,0), footer_text, font=font_subtitle)
     fw = ftb[2]-ftb[0]
-    draw.text(((IMG_WIDTH - fw)//2, fy + 24), footer_text, fill=(160, 160, 180), font=font_subtitle)
+    draw.text(((IMG_WIDTH - fw)//2, fy + 36), footer_text, fill=(160, 160, 180), font=font_subtitle)
 
     # ── Output ─────────────────────────────────────────────────────────────
     buf = io.BytesIO()
