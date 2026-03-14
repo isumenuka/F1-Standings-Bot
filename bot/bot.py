@@ -62,34 +62,39 @@ class StandingsBot(commands.Bot):
     async def load_custom_commands(self):
         """Fetch custom commands from DB and register them."""
         commands = get_custom_commands()
-        # Remove existing custom commands to avoid duplicates
-        # We identify them by a specific attribute if possible, or just clear non-static ones
-        # For simplicity, we can just clear the tree and re-add static ones, 
-        # but that's overkill. Instead, we'll just add them.
-        # discord.py doesn't have an easy way to 'clear' specific ones without knowing names.
+        print(f"📦 Loading {len(commands)} custom commands from DB...")
+        
+        # We don't clear the tree entirely because static commands are there.
+        # override=True in add_command handles updates for commands with same name.
         
         for cmd_data in commands:
             name = cmd_data['name'].lower()
             response_text = cmd_data['response']
             
-            # Create a closure for the callback
             async def make_callback(resp):
                 async def callback(interaction: discord.Interaction):
                     await interaction.response.send_message(resp)
                 return callback
 
-            # Use app_commands.Command to create a dynamic command
             new_cmd = app_commands.Command(
                 name=name,
-                description=f"Custom league command: /{name}",
+                description=f"Custom command: /{name}",
                 callback=await make_callback(response_text)
             )
             
-            # Try to add it. If it exists, remove it first.
             try:
+                # Add to global tree
                 self.tree.add_command(new_cmd, override=True)
+                
+                # Also add to guild tree if GUILD_ID is set for instant updates
+                guild_id = os.getenv("GUILD_ID")
+                if guild_id:
+                    guild = discord.Object(id=int(guild_id))
+                    self.tree.add_command(new_cmd, guild=guild, override=True)
+                
+                print(f"  + Registered custom command: /{name}")
             except Exception as e:
-                print(f"[WARN] Could not register custom command /{name}: {e}")
+                print(f"  - Failed to register custom command /{name}: {e}")
 
     @tasks.loop(minutes=1)
     async def check_sync_task(self):
@@ -98,8 +103,17 @@ class StandingsBot(commands.Bot):
             print("🔄 Syncing commands as requested by admin panel...")
             set_setting("sync_needed", "false")
             await self.load_custom_commands()
+            
+            # Sync global
             await self.tree.sync()
-            print("✅ Sync complete.")
+            
+            # Sync specific guild if set (for instant updates)
+            guild_id = os.getenv("GUILD_ID")
+            if guild_id:
+                await self.tree.sync(guild=discord.Object(id=int(guild_id)))
+                print(f"✅ Guild-specific sync complete (Guild ID: {guild_id}).")
+            
+            print("✅ Global sync command sent to Discord.")
 
 
 bot = StandingsBot()
