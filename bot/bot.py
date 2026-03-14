@@ -32,7 +32,7 @@ TOKEN = os.getenv("DISCORD_TOKEN")
 APPLICATION_ID = int(os.getenv("APPLICATION_ID", "0"))
 
 from shared.db import load_players
-from bot.image_gen import generate_standings_image
+from image_gen import generate_standings_image
 
 
 class StandingsBot(commands.Bot):
