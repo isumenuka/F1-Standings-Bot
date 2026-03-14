@@ -114,22 +114,38 @@ def generate_standings_image(players, title="DRIVER STANDINGS"):
     font_init     = load_font(FONT_BOLD_PATH, 33)
 
     # ── Header ─────────────────────────────────────────────────────────────
-    # Dark grey background
-    draw.rectangle([(0, 0), (IMG_WIDTH, TITLE_H)], fill=(12, 12, 15))
-    # Signature F1 Red Stripes
-    draw.rectangle([(0, 0), (IMG_WIDTH, 18)], fill=(225, 6, 0))
-    draw.rectangle([(0, TITLE_H - 68), (IMG_WIDTH, TITLE_H - 52)], fill=(225, 6, 0))
+    header_img_path = os.path.join(os.path.dirname(__file__), "header_template.png")
+    if not os.path.exists(header_img_path):
+        header_img_path = os.path.join(os.path.dirname(__file__), "header_template.jpg")
+        
+    use_fallback = True
+    if os.path.exists(header_img_path):
+        try:
+            with Image.open(header_img_path) as header_img:
+                header_img = header_img.convert("RGBA")
+                header_img = header_img.resize((IMG_WIDTH, TITLE_H), Image.Resampling.LANCZOS)
+                img.paste(header_img, (0, 0), mask=header_img)
+                use_fallback = False
+        except Exception as e:
+            print(f"Failed to load header image: {e}")
 
-    # Title text
-    bbox = draw.textbbox((0, 0), title, font=font_title)
-    tw = bbox[2] - bbox[0]
-    draw.text(((IMG_WIDTH - tw) // 2, 52), title.upper(), fill=(255, 255, 255), font=font_title)
+    if use_fallback:
+        # Dark grey background
+        draw.rectangle([(0, 0), (IMG_WIDTH, TITLE_H)], fill=(12, 12, 15))
+        # Signature F1 Red Stripes
+        draw.rectangle([(0, 0), (IMG_WIDTH, 18)], fill=(225, 6, 0))
+        draw.rectangle([(0, TITLE_H - 68), (IMG_WIDTH, TITLE_H - 52)], fill=(225, 6, 0))
 
-    # Subtitle
-    sub = "GAMING HASSA YT LEAGUE"
-    bbox2 = draw.textbbox((0, 0), sub, font=font_subtitle)
-    sw = bbox2[2] - bbox2[0]
-    draw.text(((IMG_WIDTH - sw) // 2, 142), sub, fill=(180, 180, 180), font=font_subtitle)
+        # Title text
+        bbox = draw.textbbox((0, 0), title, font=font_title)
+        tw = bbox[2] - bbox[0]
+        draw.text(((IMG_WIDTH - tw) // 2, 52), title.upper(), fill=(255, 255, 255), font=font_title)
+
+        # Subtitle
+        sub = "GAMING HASSA YT LEAGUE"
+        bbox2 = draw.textbbox((0, 0), sub, font=font_subtitle)
+        sw = bbox2[2] - bbox2[0]
+        draw.text(((IMG_WIDTH - sw) // 2, 142), sub, fill=(180, 180, 180), font=font_subtitle)
 
     # Column Labels
     hdr_y = TITLE_H - 38
