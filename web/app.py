@@ -11,7 +11,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 load_dotenv()
 
 from shared.db import (
-    load_players, add_player, update_player, delete_player, save_players, update_ranks
+    load_players, add_player, update_player, delete_player, save_players, update_ranks, bulk_update_players
 )
 
 app = Flask(__name__)
@@ -162,6 +162,21 @@ def update_ranks_route():
         
     update_ranks(data["ordered_ids"])
     return {"success": True}
+@app.route("/bulk_update", methods=["POST"])
+def bulk_update():
+    if not is_logged_in():
+        return {"error": "Unauthorized"}, 401
+    
+    data = request.get_json()
+    if not data or "players" not in data:
+        return {"error": "Bad Request"}, 400
+        
+    try:
+        bulk_update_players(data["players"])
+        return {"success": True}
+    except Exception as e:
+        print(f"Bulk update failed: {e}")
+        return {"error": str(e)}, 500
 
 
 if __name__ == "__main__":

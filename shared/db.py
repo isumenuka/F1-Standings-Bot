@@ -156,4 +156,53 @@ def update_ranks(ordered_player_ids):
                 p_dict[int(pid)]["manual_rank"] = rank
                 
         save_players(players)
+def bulk_update_players(players_data):
+    """
+    Apply bulk updates to players.
+    'players_data' is a list of dicts: [{'id': 1, 'name': '...', 'points': 10, 'rank': 1}, ...]
+    """
+    if DB_URL:
+        with get_db_cursor() as cur:
+            # First, check if we need to update info or just ranks
+            for p in players_data:
+                pid = int(p["id"])
+                name = p.get("name")
+                real_name = p.get("real_name")
+                points = p.get("points")
+                rank = p.get("rank")
+                
+                fields = []
+                vals = []
+                if name is not None:
+                    fields.append("name = %s")
+                    vals.append(name)
+                if real_name is not None:
+                    fields.append("real_name = %s")
+                    vals.append(real_name)
+                if points is not None:
+                    fields.append("points = %s")
+                    vals.append(int(points))
+                if rank is not None:
+                    fields.append("manual_rank = %s")
+                    vals.append(int(rank))
+                
+                if fields:
+                    vals.append(pid)
+                    query = f"UPDATE players SET {', '.join(fields)} WHERE id = %s"
+                    cur.execute(query, tuple(vals))
+    else:
+        # JSON fallback
+        current_players = load_players()
+        p_dict = {p["id"]: p for p in current_players}
+        
+        for p in players_data:
+            pid = int(p["id"])
+            if pid in p_dict:
+                target = p_dict[pid]
+                if "name" in p: target["name"] = p["name"]
+                if "real_name" in p: target["real_name"] = p["real_name"]
+                if "points" in p: target["points"] = int(p["points"])
+                if "rank" in p: target["manual_rank"] = int(p["rank"])
+        
+        save_players(current_players)
 

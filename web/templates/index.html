@@ -1,198 +1,256 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8"/>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Admin Panel — Standings Bot</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com"/>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&display=swap" rel="stylesheet"/>
-  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}"/>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Standings Bot | Admin Panel</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
+    <script src="https://kit.fontawesome.com/your-font-awesome-key.js" crossorigin="anonymous"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
 <body>
-  <!-- ── Header ── -->
-  <header>
-    <div class="header-inner">
-      <div class="brand">
-        <span class="brand-icon">🏆</span>
-        <div>
-          <span class="brand-title">Standings Bot</span>
-          <span class="brand-sub">Admin Panel</span>
-        </div>
-      </div>
-      <a href="/logout" class="btn-logout">Logout</a>
-    </div>
-  </header>
 
-  <main>
-
-    <!-- ── Flash messages ── -->
-    {% with messages = get_flashed_messages(with_categories=true) %}
-      {% if messages %}
-        {% for category, message in messages %}
-          <div class="alert alert-{{ category }}">{{ message }}</div>
-        {% endfor %}
-      {% endif %}
-    {% endwith %}
-
-    <!-- ── Stats bar ── -->
-    <div class="stats-bar">
-      <div class="stat-card">
-        <span class="stat-value">{{ players|length }}</span>
-        <span class="stat-label">Total Players</span>
-      </div>
-      <div class="stat-card">
-        <span class="stat-value">{{ players[0].points if players else 0 }}</span>
-        <span class="stat-label">Top Score</span>
-      </div>
-      <div class="stat-card">
-        <span class="stat-value">{{ players | sum(attribute='points') }}</span>
-        <span class="stat-label">Total Points</span>
-      </div>
-    </div>
-
-    <!-- ── Add Player Form ── -->
-    <section class="panel">
-      <h2 class="panel-title">➕ Add New Player</h2>
-      <form method="POST" action="/add" class="add-form" enctype="multipart/form-data">
-        <div class="form-row">
-          <div class="form-group">
-            <label>Gaming Name</label>
-            <input type="text" name="name" placeholder="e.g. wolfygear" required/>
-          </div>
-          <div class="form-group">
-            <label>Real Name</label>
-            <input type="text" name="real_name" placeholder="e.g. John Doe"/>
-          </div>
-          <div class="form-group form-group--sm">
-            <label>Points</label>
-            <input type="number" name="points" placeholder="0" value="0" min="0"/>
-          </div>
-          <div class="form-group form-group--lg">
-            <label>Avatar <span class="optional">(URL or Upload image)</span></label>
-            <input type="url" name="avatar_url" placeholder="https://..." style="margin-bottom: 5px;"/>
-            <input type="file" name="avatar" accept="image/*" style="font-size: 0.8rem;"/>
-          </div>
-          <div class="form-group form-group--btn">
-            <label>&nbsp;</label>
-            <button type="submit" class="btn btn-primary">Add Player</button>
-          </div>
-        </div>
-      </form>
-    </section>
-
-    <!-- ── Standings Table ── -->
-    <section class="panel">
-      <h2 class="panel-title">📋 Current Standings</h2>
-      {% if players %}
-      <div class="table-wrapper">
-        <table>
-          <thead>
-            <tr>
-              <th>POS</th>
-              <th>PLAYER</th>
-              <th>POINTS</th>
-              <th>SET POINTS</th>
-              <th>RENAME</th>
-              <th>DELETE</th>
-            </tr>
-          </thead>
-          <tbody id="sortable-standings">
-            {% for player in players %}
-            <tr class="row-{{ loop.index % 5 }}" data-id="{{ player.id }}" style="cursor: grab;">
-              <td class="pos">{{ loop.index }}</td>
-              <td class="player-name">
-                {% if player.avatar_url %}
-                <img src="{{ player.avatar_url }}" style="width: 30px; height: 30px; border-radius: 50%; vertical-align: middle; margin-right: 8px; object-fit: cover;">
-                {% else %}
-                <span class="avatar-badge">{{ player.name[:2].upper() }}</span>
-                {% endif %}
-                <div style="display:inline-block; vertical-align:middle; line-height: 1.2;">
-                   <div style="font-weight:bold;">{{ player.real_name or player.name }}</div>
-                   {% if player.real_name %}
-                   <div style="font-size: 0.8em; opacity: 0.7;" title="Gaming Name">{{ player.name }}</div>
-                   {% endif %}
+    <header>
+        <div class="container" style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
+            <a href="/" class="brand">
+                <div class="brand-icon">
+                    <i class="fas fa-trophy"></i>
                 </div>
-              </td>
-              <td class="points-cell">{{ player.points }}</td>
+                <div class="brand-text">
+                    <h1>Standings Bot</h1>
+                    <span>F1 League Admin</span>
+                </div>
+            </a>
+            <div class="header-actions">
+                <a href="{{ url_for('logout') }}" class="btn btn-ghost btn-sm">
+                    <i class="fas fa-sign-out-alt"></i> Logout
+                </a>
+            </div>
+        </div>
+    </header>
 
-              <!-- Set exact points -->
-              <td>
-                <form method="POST" action="/set_points/{{ player.id }}" class="inline-form">
-                  <input type="number" name="points" value="{{ player.points }}" class="input-sm" min="0"/>
-                  <button type="submit" class="btn btn-save">Set</button>
-                </form>
-              </td>
-
-              <!-- Rename / Avatar Update -->
-              <td>
-                <form method="POST" action="/update/{{ player.id }}" class="inline-form" enctype="multipart/form-data" style="display:flex; flex-direction:column; gap:5px;">
-                  <div style="display:flex; gap:5px; flex-direction:column;">
-                    <div style="display:flex; gap:5px;">
-                      <input type="text" name="name" value="{{ player.name }}" class="input-name" placeholder="Gaming Name" required/>
-                      <button type="submit" class="btn btn-save">Save</button>
+    <main class="container" style="padding-top: 40px;">
+        
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ 'success' if category == 'success' else 'error' }}">
+                        <i class="fas fa-{{ 'check-circle' if category == 'success' else 'exclamation-circle' }}"></i>
+                        {{ message }}
                     </div>
-                    <input type="text" name="real_name" value="{{ player.real_name or '' }}" class="input-name" placeholder="Real Name"/>
-                  </div>
-                  <input type="file" name="avatar" accept="image/*" style="font-size: 0.7rem; width: 150px;" title="Upload new avatar"/>
-                </form>
-              </td>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
 
-              <!-- Delete -->
-              <td>
-                <form method="POST" action="/delete/{{ player.id }}" onsubmit="return confirm('Delete {{ player.name }}?')">
-                  <button type="submit" class="btn btn-danger">🗑️</button>
-                </form>
-              </td>
-            </tr>
-            {% endfor %}
-          </tbody>
-        </table>
-      </div>
-      {% else %}
-        <div class="empty-state">No players yet. Add your first player above! 🏁</div>
-      {% endif %}
-    </section>
+        <!-- Stats Section -->
+        <div class="stats-grid">
+            <div class="stat-item">
+                <span class="stat-label">Total Players</span>
+                <span class="stat-value">{{ players|length }}</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-label">Top Score</span>
+                <span class="stat-value">{{ players[0].points if players else 0 }}</span>
+            </div>
+            <div class="stat-item">
+                <span class="stat-label">Status</span>
+                <span class="stat-value" style="color: var(--success); font-size: 24px;">Online</span>
+            </div>
+        </div>
 
-  </main>
-  
-  <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
-  <script>
-    document.addEventListener("DOMContentLoaded", function() {
-      const el = document.getElementById('sortable-standings');
-      if (el) {
-        new Sortable(el, {
-          animation: 150,
-          ghostClass: 'sortable-ghost',
-          onEnd: function (evt) {
-            // Get all ordered IDs
-            const rows = el.querySelectorAll('tr[data-id]');
-            const orderedIds = Array.from(rows).map(row => row.getAttribute('data-id'));
-            
-            // Send to backend
-            fetch('/update_ranks', {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-              },
-              body: JSON.stringify({ ordered_ids: orderedIds }),
-            })
-            .then(response => response.json())
-            .then(data => {
-              if(data.success) {
-                  // Reload to see POS numbers update
-                  window.location.reload();
-              } else {
-                  alert(data.error || "Failed to update ranks.");
-              }
-            })
-            .catch((error) => {
-              console.error('Error:', error);
-              alert("Failed to communicate with server.");
-            });
-          },
+        <!-- Add Player Form -->
+        <div class="card">
+            <div class="section-header">
+                <h2 class="section-title"><i class="fas fa-user-plus"></i> Add New Player</h2>
+            </div>
+            <form action="{{ url_for('add') }}" method="POST" enctype="multipart/form-data">
+                <div class="input-row">
+                    <div class="form-group" style="flex: 2;">
+                        <label class="form-label">Gaming Name</label>
+                        <input type="text" name="name" placeholder="e.g. WolfyGear" required>
+                    </div>
+                    <div class="form-group" style="flex: 2;">
+                        <label class="form-label">Real Name</label>
+                        <input type="text" name="real_name" placeholder="e.g. John Doe">
+                    </div>
+                    <div class="form-group" style="flex: 1;">
+                        <label class="form-label">Initial Points</label>
+                        <input type="number" name="points" value="0" min="0">
+                    </div>
+                    <div class="form-group" style="flex: 2;">
+                        <label class="form-label">Avatar URL <small>(Optional)</small></label>
+                        <input type="url" name="avatar_url" placeholder="https://...">
+                    </div>
+                    <div class="form-group" style="flex: 1; align-self: flex-end;">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-plus"></i> Add
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+
+        <!-- Standings Table -->
+        <div class="card" style="padding-bottom: 80px;">
+            <div class="section-header">
+                <h2 class="section-title"><i class="fas fa-list-ol"></i> Current Standings</h2>
+                <span class="text-muted" style="font-size: 13px;">Drag items to reorder ranks</span>
+            </div>
+
+            {% if not players %}
+                <div style="text-align: center; padding: 60px; color: var(--text-muted);">
+                    <i class="fas fa-users-slash" style="font-size: 48px; margin-bottom: 16px; opacity: 0.2;"></i>
+                    <p>No players added yet. Start by adding one above!</p>
+                </div>
+            {% else %}
+                <div class="table-container">
+                    <table id="standings-table">
+                        <thead>
+                            <tr>
+                                <th width="40"></th>
+                                <th width="60">Pos</th>
+                                <th>Player</th>
+                                <th width="120">Points</th>
+                                <th width="200">Real Name</th>
+                                <th width="100">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="sortable-list">
+                            {% for player in players %}
+                            <tr data-id="{{ player.id }}" class="player-row">
+                                <td>
+                                    <div class="drag-handle">
+                                        <i class="fas fa-grip-vertical"></i>
+                                    </div>
+                                </td>
+                                <td>
+                                    <span class="rank-badge">{{ loop.index }}</span>
+                                </td>
+                                <td>
+                                    <div class="player-info">
+                                        {% if player.avatar_url %}
+                                            <img src="{{ player.avatar_url }}" alt="" class="player-avatar" onerror="this.onerror=null; this.parentElement.innerHTML='<div class=\'avatar-fallback\'>{{ player.name[:2].upper() }}</div>';">
+                                        {% else %}
+                                            <div class="avatar-fallback">{{ player.name[:2].upper() }}</div>
+                                        {% endif %}
+                                        <input type="text" class="input-name edit-trigger" value="{{ player.name }}" style="background: transparent; border: none; font-weight: 700; width: 100%;">
+                                    </div>
+                                </td>
+                                <td>
+                                    <input type="number" class="input-points edit-trigger" value="{{ player.points }}" min="0" style="background: transparent; border: none; font-weight: 800; color: var(--warning); width: 80px; font-size: 16px;">
+                                </td>
+                                <td>
+                                    <input type="text" class="input-real-name edit-trigger" value="{{ player.real_name or '' }}" placeholder="Real Name" style="background: transparent; border: none; width: 100%;">
+                                </td>
+                                <td>
+                                    <form action="{{ url_for('delete', player_id=player.id) }}" method="POST" onsubmit="return confirm('Delete this player?');">
+                                        <button type="submit" class="btn btn-danger btn-sm">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    </form>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% endif %}
+        </div>
+    </main>
+
+    <!-- Floating Save Bar -->
+    <div id="save-bar" class="save-bar">
+        <span style="font-size: 13px; font-weight: 600;">
+            <i class="fas fa-info-circle" style="color: var(--warning);"></i> Unsaved changes detected
+        </span>
+        <div style="display: flex; gap: 10px;">
+            <button onclick="window.location.reload()" class="btn btn-ghost btn-sm">Discard</button>
+            <button onclick="saveChanges()" class="btn btn-primary btn-sm" id="save-btn">
+                <i class="fas fa-save"></i> Save Changes
+            </button>
+        </div>
+    </div>
+
+    <script>
+        const sortable = new Sortable(document.getElementById('sortable-list'), {
+            animation: 150,
+            handle: '.drag-handle',
+            ghostClass: 'sortable-ghost',
+            onEnd: function() {
+                showSaveBar();
+                updateVisualRanks();
+            }
         });
-      }
-    });
-  </script>
+
+        const inputs = document.querySelectorAll('.edit-trigger');
+        inputs.forEach(input => {
+            input.addEventListener('change', showSaveBar);
+            input.addEventListener('input', showSaveBar);
+        });
+
+        function showSaveBar() {
+            document.getElementById('save-bar').classList.add('visible');
+        }
+
+        function updateVisualRanks() {
+            const rows = document.querySelectorAll('.player-row');
+            rows.forEach((row, index) => {
+                row.querySelector('.rank-badge').innerText = index + 1;
+            });
+        }
+
+        async function saveChanges() {
+            const btn = document.getElementById('save-btn');
+            const originalContent = btn.innerHTML;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
+            btn.disabled = true;
+
+            const players = [];
+            const rows = document.querySelectorAll('.player-row');
+            
+            rows.forEach((row, index) => {
+                players.push({
+                    id: row.dataset.id,
+                    rank: index + 1,
+                    name: row.querySelector('.input-name').value,
+                    points: row.querySelector('.input-points').value,
+                    real_name: row.querySelector('.input-real-name').value
+                });
+            });
+
+            try {
+                const response = await fetch('/bulk_update', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ players: players })
+                });
+
+                if (response.ok) {
+                    btn.innerHTML = '<i class="fas fa-check"></i> Saved!';
+                    btn.style.background = 'var(--success)';
+                    setTimeout(() => {
+                        document.getElementById('save-bar').classList.remove('visible');
+                        btn.innerHTML = originalContent;
+                        btn.style.background = '';
+                        btn.disabled = false;
+                        // Reload to sync everything perfectly
+                        window.location.reload();
+                    }, 1000);
+                } else {
+                    alert('Failed to save changes.');
+                    btn.innerHTML = originalContent;
+                    btn.disabled = false;
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert('An error occurred while saving.');
+                btn.innerHTML = originalContent;
+                btn.disabled = false;
+            }
+        }
+    </script>
 </body>
 </html>
