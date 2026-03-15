@@ -394,11 +394,11 @@ tr:nth-child(3) .rank-badge { color: #cd7f32; }
   .input-row { grid-template-columns: 1fr; }
   .save-bar { width: 90%; justify-content: space-between; bottom: 16px; }
 }
-/* ── ANSI Console Colors ── */
+/* ── ANSI & Syntax Console Colors ── */
 .ansi-preview {
-    background: #000;
-    color: #fff;
-    font-family: 'Consolas', 'Monaco', monospace;
+    background: #1e1f22; /* Discord-like dark bg */
+    color: #dbdee1;
+    font-family: 'Consolas', 'Monaco', 'Courier New', monospace;
     padding: 16px;
     border-radius: 8px;
     white-space: pre-wrap;
@@ -406,20 +406,29 @@ tr:nth-child(3) .rank-badge { color: #cd7f32; }
     line-height: 1.4;
     border: 1px solid var(--border-color);
     margin-top: 8px;
+    min-height: 100px;
 }
+
+/* Markdown Styles inside previews */
+.ansi-preview h1, .ansi-preview h2, .ansi-preview h3 { margin-bottom: 8px; color: #fff; }
+.ansi-preview p { margin-bottom: 8px; }
+.ansi-preview ul, .ansi-preview ol { margin-left: 20px; margin-bottom: 8px; }
+.ansi-preview blockquote { border-left: 4px solid #4e5058; padding-left: 12px; color: #b5bac1; }
+.ansi-preview code:not(pre code) { background: #2b2d31; padding: 2px 4px; border-radius: 4px; font-family: monospace; }
+.ansi-preview pre { background: #2b2d31; padding: 12px; border-radius: 4px; margin: 8px 0; overflow-x: auto; }
 
 .ansi-bold { font-weight: bold; }
 .ansi-underline { text-decoration: underline; }
 
 /* Foreground Colors */
-.ansi-30 { color: #4f4f4f; } /* Black (Gray) */
-.ansi-31 { color: #ff5555; } /* Red */
-.ansi-32 { color: #55ff55; } /* Green */
-.ansi-33 { color: #ffff55; } /* Yellow */
-.ansi-34 { color: #5555ff; } /* Blue */
-.ansi-35 { color: #ff55ff; } /* Magenta */
-.ansi-36 { color: #55ffff; } /* Cyan */
-.ansi-37 { color: #ffffff; } /* White */
+.ansi-30 { color: #4f4f4f; }
+.ansi-31 { color: #ff5555; }
+.ansi-32 { color: #55ff55; }
+.ansi-33 { color: #ffff55; }
+.ansi-34 { color: #5555ff; }
+.ansi-35 { color: #ff55ff; }
+.ansi-36 { color: #55ffff; }
+.ansi-37 { color: #ffffff; }
 
 /* Background Colors */
 .ansi-40 { background-color: #000000; }
@@ -430,3 +439,10 @@ tr:nth-child(3) .rank-badge { color: #cd7f32; }
 .ansi-45 { background-color: #bb00bb; }
 .ansi-46 { background-color: #00bbbb; }
 .ansi-47 { background-color: #bbbbbb; }
+
+/* Syntax Highlighting Fake (matching guide) */
+.ansi-preview pre.language-diff { border-left: 4px solid #f23f42; }
+.ansi-preview .diff-minus { color: #f23f42; }
+.ansi-preview .diff-plus { color: #23a559; }
+.ansi-preview .fix-text { color: #faa61a; }
+.ansi-preview .css-text { color: #b5bac1; }

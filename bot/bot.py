@@ -76,8 +76,8 @@ class StandingsBot(commands.Bot):
                     # Check for ANSI codes: \u001b[ or \033[
                     is_ansi = "\u001b[" in resp or "\033[" in resp
                     
-                    if is_ansi and "```ansi" not in resp:
-                        # Wrap in ansi code block if not already there
+                    if is_ansi and "```ansi" not in resp and "```" not in resp:
+                        # Wrap in ansi code block if not already inside ANY code block
                         final_resp = f"```ansi\n{resp.strip()}\n```"
                     else:
                         final_resp = resp
