@@ -273,19 +273,90 @@
                                         <input type="text" name="name" id="cmd-name" placeholder="rules" required style="border: none; background: transparent; padding-left: 0; width: 100%;">
                                     </div>
                                 </div>
-                                <button type="submit" id="submit-btn" class="btn btn-primary" style="height: 46px; padding: 0 40px;">
-                                    <i class="fas fa-plus"></i> Add Command
-                                </button>
+                                <div style="display: flex; gap: 8px;">
+                                    <button type="button" class="btn btn-secondary" onclick="document.getElementById('txt-upload').click()">
+                                        <i class="fas fa-upload"></i> Upload .txt
+                                    </button>
+                                    <input type="file" id="txt-upload" style="display: none;" accept=".txt" onchange="handleTxtUpload(this)">
+                                    <button type="submit" id="submit-btn" class="btn btn-primary" style="height: 46px; padding: 0 40px;">
+                                        <i class="fas fa-plus"></i> Add Command
+                                    </button>
+                                </div>
                             </div>
                             
                             <div class="form-group">
-                                <label class="form-label">Response Text <small>(Markdown supported)</small></label>
-                                <textarea name="response" id="cmd-response" placeholder="Enter command response. Markdown is supported! ..." required style="width: 100%; min-height: 250px; resize: vertical; padding: 16px; font-size: 15px;"></textarea>
+                                <label class="form-label">Response Text <small>(Discord ANSI & Markdown supported)</small></label>
+                                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                                    <textarea name="response" id="cmd-response" placeholder="Enter command response. ANSI colors are supported! ..." required style="width: 100%; min-height: 300px; resize: vertical; padding: 16px; font-size: 15px;" oninput="updatePreview()"></textarea>
+                                    <div>
+                                        <div class="form-label" style="margin-bottom: 8px;">Live Discord Preview</div>
+                                        <div id="ansi-preview" class="ansi-preview"></div>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </form>
 
                     <script>
+                        function handleTxtUpload(input) {
+                            if (!input.files || !input.files[0]) return;
+                            const reader = new FileReader();
+                            reader.onload = function(e) {
+                                document.getElementById('cmd-response').value = e.target.result;
+                                updatePreview();
+                            };
+                            reader.readAsText(input.files[0]);
+                        }
+
+                        function updatePreview() {
+                            const text = document.getElementById('cmd-response').value;
+                            const preview = document.getElementById('ansi-preview');
+                            preview.innerHTML = renderAnsi(text);
+                        }
+
+                        function renderAnsi(text) {
+                            // Simple ANSI to HTML converter
+                            let output = text
+                                .replace(/&/g, "&amp;")
+                                .replace(/</g, "&lt;")
+                                .replace(/>/g, "&gt;");
+
+                            const ansiRegexp = /\x1b\[([\d;]+)m/g;
+                            let openSpans = 0;
+
+                            output = output.replace(ansiRegexp, (match, codes) => {
+                                let result = "";
+                                while(openSpans > 0) {
+                                    result += "</span>";
+                                    openSpans--;
+                                }
+
+                                if (codes === "0") return result;
+
+                                const classes = [];
+                                codes.split(';').forEach(code => {
+                                    const c = parseInt(code);
+                                    if (c === 1) classes.push("ansi-bold");
+                                    else if (c === 4) classes.push("ansi-underline");
+                                    else if (c >= 30 && c <= 37) classes.push("ansi-" + c);
+                                    else if (c >= 40 && c <= 47) classes.push("ansi-" + c);
+                                });
+
+                                if (classes.length > 0) {
+                                    openSpans++;
+                                    return result + `<span class="${classes.join(' ')}">`;
+                                }
+                                return result;
+                            });
+
+                            while(openSpans > 0) {
+                                output += "</span>";
+                                openSpans--;
+                            }
+
+                            return output;
+                        }
+
                         function editCommand(btn) {
                             const id = btn.getAttribute('data-id');
                             const name = btn.getAttribute('data-name');
@@ -299,6 +370,8 @@
                             document.getElementById('submit-btn').innerHTML = '<i class="fas fa-save"></i> Save Changes';
                             document.getElementById('cancel-edit').style.display = 'block';
                             
+                            updatePreview();
+
                             // Scroll to form
                             document.getElementById('command-form').scrollIntoView({ behavior: 'smooth' });
                             document.getElementById('cmd-response').focus();
@@ -310,6 +383,7 @@
                             document.getElementById('cmd-id').value = '';
                             document.getElementById('cmd-name').value = '';
                             document.getElementById('cmd-response').value = '';
+                            document.getElementById('ansi-preview').innerHTML = '';
                             document.getElementById('submit-btn').innerHTML = '<i class="fas fa-plus"></i> Add Command';
                             document.getElementById('cancel-edit').style.display = 'none';
                         }

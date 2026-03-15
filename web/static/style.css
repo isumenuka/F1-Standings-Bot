@@ -394,3 +394,39 @@ tr:nth-child(3) .rank-badge { color: #cd7f32; }
   .input-row { grid-template-columns: 1fr; }
   .save-bar { width: 90%; justify-content: space-between; bottom: 16px; }
 }
+/* ── ANSI Console Colors ── */
+.ansi-preview {
+    background: #000;
+    color: #fff;
+    font-family: 'Consolas', 'Monaco', monospace;
+    padding: 16px;
+    border-radius: 8px;
+    white-space: pre-wrap;
+    font-size: 14px;
+    line-height: 1.4;
+    border: 1px solid var(--border-color);
+    margin-top: 8px;
+}
+
+.ansi-bold { font-weight: bold; }
+.ansi-underline { text-decoration: underline; }
+
+/* Foreground Colors */
+.ansi-30 { color: #4f4f4f; } /* Black (Gray) */
+.ansi-31 { color: #ff5555; } /* Red */
+.ansi-32 { color: #55ff55; } /* Green */
+.ansi-33 { color: #ffff55; } /* Yellow */
+.ansi-34 { color: #5555ff; } /* Blue */
+.ansi-35 { color: #ff55ff; } /* Magenta */
+.ansi-36 { color: #55ffff; } /* Cyan */
+.ansi-37 { color: #ffffff; } /* White */
+
+/* Background Colors */
+.ansi-40 { background-color: #000000; }
+.ansi-41 { background-color: #bb0000; }
+.ansi-42 { background-color: #00bb00; }
+.ansi-43 { background-color: #bbbb00; }
+.ansi-44 { background-color: #0000bb; }
+.ansi-45 { background-color: #bb00bb; }
+.ansi-46 { background-color: #00bbbb; }
+.ansi-47 { background-color: #bbbbbb; }

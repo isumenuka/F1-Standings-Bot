@@ -73,7 +73,16 @@ class StandingsBot(commands.Bot):
             
             async def make_callback(resp):
                 async def callback(interaction: discord.Interaction):
-                    await interaction.response.send_message(resp)
+                    # Check for ANSI codes: \u001b[ or \033[
+                    is_ansi = "\u001b[" in resp or "\033[" in resp
+                    
+                    if is_ansi and "```ansi" not in resp:
+                        # Wrap in ansi code block if not already there
+                        final_resp = f"```ansi\n{resp.strip()}\n```"
+                    else:
+                        final_resp = resp
+                        
+                    await interaction.response.send_message(final_resp)
                 return callback
 
             new_cmd = app_commands.Command(

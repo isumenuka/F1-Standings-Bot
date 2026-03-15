@@ -259,6 +259,8 @@ def bulk_update_players(players_data):
 
 # ── Custom Commands ───────────────────────────────────────────────────────────
 
+# ── Custom Commands ───────────────────────────────────────────────────────────
+
 def get_custom_commands():
     if DB_URL:
         try:
@@ -268,7 +270,15 @@ def get_custom_commands():
         except Exception as e:
             print(f"Error getting custom commands: {e}")
             return []
-    return []
+    else:
+        if not os.path.exists(DATA_PATH): return []
+        with open(DATA_PATH, "r", encoding="utf-8") as f:
+            try:
+                data = json.load(f)
+            except Exception:
+                return []
+        if isinstance(data, list): return []
+        return data.get("commands", [])
 
 def add_custom_command(name, description, response):
     name = name.lower().strip().replace(" ", "-").replace("/", "")
@@ -288,7 +298,37 @@ def add_custom_command(name, description, response):
         except Exception as e:
             print(f"Error adding custom command: {e}")
             return False
-    return False
+    else:
+        if os.path.exists(DATA_PATH):
+            with open(DATA_PATH, "r", encoding="utf-8") as f:
+                try:
+                    data = json.load(f)
+                except Exception:
+                    data = {"players": [], "settings": {}, "commands": []}
+        else:
+            data = {"players": [], "settings": {}, "commands": []}
+            
+        if isinstance(data, list):
+            data = {"players": data, "settings": {}, "commands": []}
+        
+        if "commands" not in data: data["commands"] = []
+        
+        # Check if already exists
+        existing = next((c for c in data["commands"] if c["name"] == name), None)
+        if existing:
+            existing["description"] = description
+            existing["response"] = response
+        else:
+            new_id = max([c["id"] for c in data["commands"]] + [0]) + 1
+            data["commands"].append({
+                "id": new_id,
+                "name": name,
+                "description": description,
+                "response": response
+            })
+        
+        save_all_data(data)
+        return True
 
 def delete_custom_command(cmd_id):
     if DB_URL:
@@ -299,7 +339,23 @@ def delete_custom_command(cmd_id):
         except Exception as e:
             print(f"Error deleting custom command: {e}")
             return False
-    return False
+    else:
+        if not os.path.exists(DATA_PATH): return False
+        with open(DATA_PATH, "r", encoding="utf-8") as f:
+            try:
+                data = json.load(f)
+            except Exception:
+                return False
+            
+        if not isinstance(data, dict) or "commands" not in data: return False
+        
+        initial_len = len(data["commands"])
+        data["commands"] = [c for c in data["commands"] if c["id"] != int(cmd_id)]
+        
+        if len(data["commands"]) < initial_len:
+            save_all_data(data)
+            return True
+        return False
 
 def update_custom_command(cmd_id, name, response):
     name = name.lower().strip().replace(" ", "-").replace("/", "")
@@ -317,4 +373,25 @@ def update_custom_command(cmd_id, name, response):
         except Exception as e:
             print(f"Error updating custom command: {e}")
             return False
-    return False
+    else:
+        if not os.path.exists(DATA_PATH): return False
+        with open(DATA_PATH, "r", encoding="utf-8") as f:
+            try:
+                data = json.load(f)
+            except Exception:
+                return False
+            
+        if not isinstance(data, dict) or "commands" not in data: return False
+        
+        updated = False
+        for c in data["commands"]:
+            if c["id"] == int(cmd_id):
+                c["name"] = name
+                c["response"] = response
+                updated = True
+                break
+        
+        if updated:
+            save_all_data(data)
+            return True
+        return False
