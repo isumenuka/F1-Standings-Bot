@@ -290,7 +290,7 @@
                                     <textarea name="response" id="cmd-response" placeholder="Enter command response. ANSI colors are supported! ..." required style="width: 100%; min-height: 300px; resize: vertical; padding: 16px; font-size: 15px;" oninput="updatePreview()"></textarea>
                                     <div>
                                         <div class="form-label" style="margin-bottom: 8px;">Live Discord Preview</div>
-                                        <div id="ansi-preview" class="ansi-preview"></div>
+                                        <div id="ansi-preview"></div>
                                     </div>
                                 </div>
                             </div>
@@ -320,8 +320,41 @@
 
         function updatePreview() {
             const text = document.getElementById('cmd-response').value;
-            const preview = document.getElementById('ansi-preview');
-            preview.innerHTML = renderDiscord(text);
+            const previewContainer = document.getElementById('ansi-preview');
+            previewContainer.innerHTML = ""; // Clear current
+
+            if (!text) return;
+
+            // Split logic matching the bot
+            const limit = 1900;
+            let remainingText = text;
+            const chunks = [];
+
+            while (remainingText) {
+                if (remainingText.length <= limit) {
+                    chunks.push(remainingText);
+                    break;
+                }
+
+                let splitAt = remainingText.lastIndexOf('\n', limit);
+                if (splitAt === -1) splitAt = remainingText.lastIndexOf(' ', limit);
+                if (splitAt === -1) splitAt = limit;
+
+                chunks.push(remainingText.substring(0, splitAt));
+                remainingText = remainingText.substring(splitAt).trimStart();
+            }
+
+            chunks.forEach((chunk, index) => {
+                const label = document.createElement('div');
+                label.className = "message-split-label";
+                label.innerHTML = `<span>Message #${index + 1}</span>`;
+                previewContainer.appendChild(label);
+
+                const div = document.createElement('div');
+                div.className = "ansi-preview-container";
+                div.innerHTML = renderDiscord(chunk);
+                previewContainer.appendChild(div);
+            });
         }
 
         function renderDiscord(text) {

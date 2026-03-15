@@ -82,7 +82,31 @@ class StandingsBot(commands.Bot):
                     else:
                         final_resp = resp
                         
-                    await interaction.response.send_message(final_resp)
+                    def split_message(text, limit=1900):
+                        chunks = []
+                        while text:
+                            if len(text) <= limit:
+                                chunks.append(text)
+                                break
+                            
+                            # Find best split point (newline or space)
+                            split_at = text.rfind('\n', 0, limit)
+                            if split_at == -1: split_at = text.rfind(' ', 0, limit)
+                            if split_at == -1: split_at = limit
+                            
+                            chunks.append(text[:split_at])
+                            text = text[split_at:].lstrip()
+                        return chunks
+
+                    chunks = split_message(final_resp)
+                    
+                    if not chunks:
+                        await interaction.response.send_message("Empty response.", ephemeral=True)
+                        return
+
+                    await interaction.response.send_message(chunks[0])
+                    for chunk in chunks[1:]:
+                        await interaction.followup.send(chunk)
                 return callback
 
             new_cmd = app_commands.Command(
