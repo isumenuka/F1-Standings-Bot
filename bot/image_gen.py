@@ -54,6 +54,7 @@ def darken(color, factor=0.5):
 
 # ── Dimensions ───────────────────────────────────────────────────────────────
 IMG_WIDTH   = 1620
+IMG_HEIGHT  = 2160  # Forced 3:4 aspect ratio (1620 * 4 / 3)
 TITLE_H     = 270
 ROW_H       = 120
 FOOTER_H    = 120
@@ -99,10 +100,11 @@ def load_avatar(url, size=(AVATAR_SIZE, AVATAR_SIZE)):
         return None
 
 def generate_standings_image(players, title="DRIVER STANDINGS"):
-    num = len(players)
-    img_height = TITLE_H + num * ROW_H + FOOTER_H
+    # Limit players to what fits in the forced aspect ratio
+    max_players = (IMG_HEIGHT - TITLE_H - FOOTER_H) // ROW_H
+    players = players[:max_players]
 
-    img = Image.new("RGB", (IMG_WIDTH, img_height), (15, 15, 15))
+    img = Image.new("RGB", (IMG_WIDTH, IMG_HEIGHT), (15, 15, 15))
     draw = ImageDraw.Draw(img)
 
     font_title    = load_font(FONT_BOLD_PATH, 82)
@@ -215,9 +217,10 @@ def generate_standings_image(players, title="DRIVER STANDINGS"):
         draw.text((pts_x, y_start + (ROW_H - pt_h)//2 - 12), pts_text, fill=(255, 255, 255), font=font_pts)
 
     # ── Footer ─────────────────────────────────────────────────────────────
-    fy = TITLE_H + num * ROW_H
-    draw.rectangle([(0, fy), (IMG_WIDTH, img_height)], fill=(12, 12, 15))
-    draw.rectangle([(0, img_height - 18), (IMG_WIDTH, img_height)], fill=(225, 6, 0)) # Bottom stripe
+    # Footer always at the very bottom of the fixed height image
+    fy = IMG_HEIGHT - FOOTER_H
+    draw.rectangle([(0, fy), (IMG_WIDTH, IMG_HEIGHT)], fill=(12, 12, 15))
+    draw.rectangle([(0, IMG_HEIGHT - 18), (IMG_WIDTH, IMG_HEIGHT)], fill=(225, 6, 0)) # Bottom stripe
     
     footer_text = "https://racenet.com/f1_25/leagues/league/leagueId=26504"
     ftb = draw.textbbox((0,0), footer_text, font=font_subtitle)
