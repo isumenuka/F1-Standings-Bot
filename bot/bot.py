@@ -169,7 +169,7 @@ async def standings(interaction: discord.Interaction):
         # Get dynamic league URL from custom commands
         custom_cmds = get_custom_commands()
         league_cmd = next((c for c in custom_cmds if c['name'].lower() == 'league'), None)
-        league_url = league_cmd['response'] if league_cmd else "https://racenet.com/f1_25/leagues/league/leagueID=25953"
+        league_url = league_cmd['response'] if league_cmd else "https://racenet.com/f1_25/leagues/league/leagueId=26504"
         
         content = (
             "🏆 **Driver Standings**\n"

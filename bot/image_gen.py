@@ -219,7 +219,7 @@ def generate_standings_image(players, title="DRIVER STANDINGS"):
     draw.rectangle([(0, fy), (IMG_WIDTH, img_height)], fill=(12, 12, 15))
     draw.rectangle([(0, img_height - 18), (IMG_WIDTH, img_height)], fill=(225, 6, 0)) # Bottom stripe
     
-    footer_text = "https://racenet.com/f1_25/leagues/league/leagueID=25953"
+    footer_text = "https://racenet.com/f1_25/leagues/league/leagueId=26504"
     ftb = draw.textbbox((0,0), footer_text, font=font_subtitle)
     fw = ftb[2]-ftb[0]
     draw.text(((IMG_WIDTH - fw)//2, fy + 36), footer_text, fill=(160, 160, 180), font=font_subtitle)
