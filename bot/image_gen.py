@@ -56,11 +56,11 @@ def darken(color, factor=0.5):
 IMG_WIDTH   = 1620
 IMG_HEIGHT  = 2160  # Forced 3:4 aspect ratio (1620 * 4 / 3)
 TITLE_H     = 270
-ROW_H       = 120
+ROW_H       = 88    # Reduced to fit 20 drivers (1760/20)
 FOOTER_H    = 120
 POS_W       = 150
 PADDING_X   = 38
-AVATAR_SIZE = 90
+AVATAR_SIZE = 70    # Scaled for smaller rows
 
 def draw_avatar_placeholder(draw, cx, cy, r, color, initials, font):
     """Draw a fallback circle with initials."""
@@ -108,12 +108,12 @@ def generate_standings_image(players, title="DRIVER STANDINGS"):
     draw = ImageDraw.Draw(img)
 
     font_title    = load_font(FONT_BOLD_PATH, 82)
-    font_subtitle = load_font(FONT_REG_PATH, 36)
-    font_pos      = load_font(FONT_BOLD_PATH, 54)
-    font_name     = load_font(FONT_BOLD_PATH, 48)
-    font_pts      = load_font(FONT_BOLD_PATH, 63)
+    font_subtitle = load_font(FONT_REG_PATH, 28) # Scaled down
+    font_pos      = load_font(FONT_BOLD_PATH, 42) # Scaled down
+    font_name     = load_font(FONT_BOLD_PATH, 36) # Scaled down
+    font_pts      = load_font(FONT_BOLD_PATH, 52) # Scaled down
     font_pts_lbl  = load_font(FONT_REG_PATH, 24)
-    font_init     = load_font(FONT_BOLD_PATH, 33)
+    font_init     = load_font(FONT_BOLD_PATH, 28) # Scaled down
 
     # ── Header ─────────────────────────────────────────────────────────────
     header_img_path = os.path.join(os.path.dirname(__file__), "header_template.png")
@@ -214,7 +214,7 @@ def generate_standings_image(players, title="DRIVER STANDINGS"):
         pt_w = pts_bbox[2]-pts_bbox[0]
         pt_h = pts_bbox[3]-pts_bbox[1]
         pts_x = IMG_WIDTH - pt_w - PADDING_X - 22
-        draw.text((pts_x, y_start + (ROW_H - pt_h)//2 - 12), pts_text, fill=(255, 255, 255), font=font_pts)
+        draw.text((pts_x, y_start + (ROW_H - pt_h)//2 - 10), pts_text, fill=(255, 255, 255), font=font_pts)
 
     # ── Footer ─────────────────────────────────────────────────────────────
     # Footer always at the very bottom of the fixed height image
